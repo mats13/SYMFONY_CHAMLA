@@ -1,4 +1,4 @@
-# SYMfONY_CHAMLA
+# SYMFONY_CHAMLA
 Repo PHP Symfony par Chamla. Installation et utilisation de Symfony 4
 
 ## Tuto 
