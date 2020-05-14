@@ -12,7 +12,7 @@ namespace PackageVersions;
  */
 final class Versions
 {
-    public const ROOT_PACKAGE_NAME = 'symfony/website-skeleton';
+    public const ROOT_PACKAGE_NAME = '__root__';
     /**
      * Array of all available composer packages.
      * Dont read this array from your calling code, but use the \PackageVersions\Versions::getVersion() method instead.
@@ -123,13 +123,13 @@ final class Versions
   'symfony/var-dumper' => 'v4.3.11@75669a7e681cbd4a291a08ed31d2d3998fe86e48',
   'symfony/web-profiler-bundle' => 'v4.3.11@ef55f4aac938cdf8c2051ead22e18ad80ed4e4f8',
   'symfony/web-server-bundle' => 'v4.3.11@2338445b78f1fb212a96f4286abdc77ee1e92607',
-  'paragonie/random_compat' => '2.*@',
-  'symfony/polyfill-ctype' => '*@',
-  'symfony/polyfill-iconv' => '*@',
-  'symfony/polyfill-php71' => '*@',
-  'symfony/polyfill-php70' => '*@',
-  'symfony/polyfill-php56' => '*@',
-  'symfony/website-skeleton' => 'v4.3.99@',
+  'paragonie/random_compat' => '2.*@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
+  'symfony/polyfill-ctype' => '*@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
+  'symfony/polyfill-iconv' => '*@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
+  'symfony/polyfill-php71' => '*@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
+  'symfony/polyfill-php70' => '*@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
+  'symfony/polyfill-php56' => '*@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
+  '__root__' => 'dev-master@f28b9b12eed2bb41fe000c85e34ac3bc2195ed45',
 );
 
     private function __construct()
