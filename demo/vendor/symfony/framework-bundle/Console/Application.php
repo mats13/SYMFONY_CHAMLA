@@ -19,6 +19,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\HttpKernel\Kernel;
@@ -52,16 +53,6 @@ class Application extends BaseApplication
     public function getKernel()
     {
         return $this->kernel;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function reset()
-    {
-        if ($this->kernel->getContainer()->has('services_resetter')) {
-            $this->kernel->getContainer()->get('services_resetter')->reset();
-        }
     }
 
     /**
@@ -173,8 +164,10 @@ class Application extends BaseApplication
             if ($bundle instanceof Bundle) {
                 try {
                     $bundle->registerCommands($this);
-                } catch (\Throwable $e) {
+                } catch (\Exception $e) {
                     $this->registrationErrors[] = $e;
+                } catch (\Throwable $e) {
+                    $this->registrationErrors[] = new FatalThrowableError($e);
                 }
             }
         }
@@ -189,8 +182,10 @@ class Application extends BaseApplication
                 if (!isset($lazyCommandIds[$id])) {
                     try {
                         $this->add($container->get($id));
-                    } catch (\Throwable $e) {
+                    } catch (\Exception $e) {
                         $this->registrationErrors[] = $e;
+                    } catch (\Throwable $e) {
+                        $this->registrationErrors[] = new FatalThrowableError($e);
                     }
                 }
             }
@@ -206,7 +201,7 @@ class Application extends BaseApplication
         (new SymfonyStyle($input, $output))->warning('Some commands could not be registered:');
 
         foreach ($this->registrationErrors as $error) {
-            $this->doRenderThrowable($error, $output);
+            $this->doRenderException($error, $output);
         }
     }
 }

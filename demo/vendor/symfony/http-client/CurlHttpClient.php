@@ -32,16 +32,15 @@ use Symfony\Contracts\Service\ResetInterface;
  * HTTP/2 push when a curl version that supports it is installed.
  *
  * @author Nicolas Grekas <p@tchwork.com>
+ *
+ * @experimental in 4.3
  */
 final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface, ResetInterface
 {
     use HttpClientTrait;
     use LoggerAwareTrait;
 
-    private $defaultOptions = self::OPTIONS_DEFAULTS + [
-        'auth_ntlm' => null, // array|string - an array containing the username as first value, and optionally the
-                             //   password as the second one; or string like username:password - enabling NTLM auth
-    ];
+    private $defaultOptions = self::OPTIONS_DEFAULTS;
 
     /**
      * An internal object to share state between the client and its responses.
@@ -53,7 +52,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
     private static $curlVersion;
 
     /**
-     * @param array $defaultOptions     Default request's options
+     * @param array $defaultOptions     Default requests' options
      * @param int   $maxHostConnections The maximum number of connections to a single host
      * @param int   $maxPendingPushes   The maximum number of pushed responses to accept in the queue
      *
@@ -65,10 +64,8 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             throw new \LogicException('You cannot use the "Symfony\Component\HttpClient\CurlHttpClient" as the "curl" extension is not installed.');
         }
 
-        $this->defaultOptions['buffer'] = $this->defaultOptions['buffer'] ?? \Closure::fromCallable([__CLASS__, 'shouldBuffer']);
-
         if ($defaultOptions) {
-            [, $this->defaultOptions] = self::prepareRequest(null, null, $defaultOptions, $this->defaultOptions);
+            [, $this->defaultOptions] = self::prepareRequest(null, null, $defaultOptions, self::OPTIONS_DEFAULTS);
         }
 
         $this->multi = $multi = new CurlClientState();
@@ -141,34 +138,6 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             CURLOPT_CERTINFO => $options['capture_peer_cert_chain'],
         ];
 
-        if (\defined('CURL_VERSION_HTTP2') && (CURL_VERSION_HTTP2 & self::$curlVersion['features']) && ('https:' === $scheme || 2.0 === (float) $options['http_version'])) {
-            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
-        } elseif (1.0 === (float) $options['http_version']) {
-            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_0;
-        } elseif (1.1 === (float) $options['http_version']) {
-            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
-        }
-
-        if (isset($options['auth_ntlm'])) {
-            $curlopts[CURLOPT_HTTPAUTH] = CURLAUTH_NTLM;
-            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
-
-            if (\is_array($options['auth_ntlm'])) {
-                $count = \count($options['auth_ntlm']);
-                if ($count <= 0 || $count > 2) {
-                    throw new InvalidArgumentException(sprintf('Option "auth_ntlm" must contain 1 or 2 elements, %d given.', $count));
-                }
-
-                $options['auth_ntlm'] = implode(':', $options['auth_ntlm']);
-            }
-
-            if (!\is_string($options['auth_ntlm'])) {
-                throw new InvalidArgumentException(sprintf('Option "auth_ntlm" must be a string or an array, "%s" given.', \gettype($options['auth_ntlm'])));
-            }
-
-            $curlopts[CURLOPT_USERPWD] = $options['auth_ntlm'];
-        }
-
         if (!ZEND_THREAD_SAFE) {
             $curlopts[CURLOPT_DNS_USE_GLOBAL_CACHE] = false;
         }
@@ -202,6 +171,14 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             }
 
             $curlopts[CURLOPT_RESOLVE] = $resolve;
+        }
+
+        if (1.0 === (float) $options['http_version']) {
+            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_0;
+        } elseif (1.1 === (float) $options['http_version'] || 'https:' !== $scheme) {
+            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
+        } elseif (\defined('CURL_VERSION_HTTP2') && CURL_VERSION_HTTP2 & self::$curlVersion['features']) {
+            $curlopts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
         }
 
         if ('POST' === $method) {
@@ -273,10 +250,6 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             $curlopts[file_exists($options['bindto']) ? CURLOPT_UNIX_SOCKET_PATH : CURLOPT_INTERFACE] = $options['bindto'];
         }
 
-        if (0 < $options['max_duration']) {
-            $curlopts[CURLOPT_TIMEOUT_MS] = 1000 * $options['max_duration'];
-        }
-
         if ($pushedResponse = $this->multi->pushedResponses[$url] ?? null) {
             unset($this->multi->pushedResponses[$url]);
 
@@ -288,7 +261,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
                 $pushedResponse = $pushedResponse->response;
                 $pushedResponse->__construct($this->multi, $url, $options, $this->logger);
             } else {
-                $this->logger && $this->logger->debug(sprintf('Rejecting pushed response: "%s"', $url));
+                $this->logger && $this->logger->debug(sprintf('Rejecting pushed response: "%s".', $url));
                 $pushedResponse = null;
             }
         }
@@ -308,7 +281,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             }
         }
 
-        return $pushedResponse ?? new CurlResponse($this->multi, $ch, $options, $this->logger, $method, self::createRedirectResolver($options, $host), self::$curlVersion['version_number']);
+        return $pushedResponse ?? new CurlResponse($this->multi, $ch, $options, $this->logger, $method, self::createRedirectResolver($options, $host));
     }
 
     /**
@@ -319,7 +292,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
         if ($responses instanceof CurlResponse) {
             $responses = [$responses];
         } elseif (!is_iterable($responses)) {
-            throw new \TypeError(sprintf('"%s()" expects parameter 1 to be an iterable of CurlResponse objects, "%s" given.', __METHOD__, \is_object($responses) ? \get_class($responses) : \gettype($responses)));
+            throw new \TypeError(sprintf('%s() expects parameter 1 to be an iterable of CurlResponse objects, %s given.', __METHOD__, \is_object($responses) ? \get_class($responses) : \gettype($responses)));
         }
 
         $active = 0;
@@ -412,7 +385,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
             return false;
         }
 
-        foreach (['proxy', 'no_proxy', 'bindto', 'local_cert', 'local_pk'] as $k) {
+        foreach (['proxy', 'no_proxy', 'bindto'] as $k) {
             if ($options[$k] !== $pushedResponse->parentOptions[$k]) {
                 return false;
             }
@@ -439,7 +412,7 @@ final class CurlHttpClient implements HttpClientInterface, LoggerAwareInterface,
     {
         if (!$eof && \strlen($buffer) < $length) {
             if (!\is_string($data = $body($length))) {
-                throw new TransportException(sprintf('The return value of the "body" option callback must be a string, "%s" returned.', \gettype($data)));
+                throw new TransportException(sprintf('The return value of the "body" option callback must be a string, %s returned.', \gettype($data)));
             }
 
             $buffer .= $data;

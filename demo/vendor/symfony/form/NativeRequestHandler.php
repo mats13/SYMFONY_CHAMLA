@@ -161,8 +161,10 @@ class NativeRequestHandler implements RequestHandlerInterface
 
     /**
      * Returns the method used to submit the request to the server.
+     *
+     * @return string The request method
      */
-    private static function getRequestMethod(): string
+    private static function getRequestMethod()
     {
         $method = isset($_SERVER['REQUEST_METHOD'])
             ? strtoupper($_SERVER['REQUEST_METHOD'])

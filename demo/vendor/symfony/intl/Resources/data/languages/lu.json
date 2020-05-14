@@ -1,5 +1,5 @@
 {
-    "Version": "36.1",
+    "Version": "36",
     "Names": {
         "ak": "Liakan",
         "am": "Liamhariki",
@@ -44,6 +44,5 @@
         "yo": "Nyoruba",
         "zh": "shinɛ",
         "zu": "Nzulu"
-    },
-    "LocalizedNames": []
+    }
 }

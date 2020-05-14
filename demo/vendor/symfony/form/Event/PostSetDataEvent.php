@@ -18,6 +18,6 @@ use Symfony\Component\Form\FormEvent;
  *
  * This event is mostly here for reading data after having pre-populated the form.
  */
-final class PostSetDataEvent extends FormEvent
+class PostSetDataEvent extends FormEvent
 {
 }

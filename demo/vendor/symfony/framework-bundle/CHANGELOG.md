@@ -1,50 +1,6 @@
 CHANGELOG
 =========
 
-5.0.0
------
-
- * Removed support to load translation resources from the legacy directories `src/Resources/translations/` and `src/Resources/<BundleName>/translations/`
- * Removed `ControllerNameParser`.
- * Removed `ResolveControllerNameSubscriber`
- * Removed support for `bundle:controller:action` to reference controllers. Use `serviceOrFqcn::method` instead
- * Removed support for PHP templating, use Twig instead
- * Removed `Controller`, use `AbstractController` instead
- * Removed `Client`, use `KernelBrowser` instead
- * Removed `ContainerAwareCommand`, use dependency injection instead
- * Removed the `validation.strict_email` option, use `validation.email_validation_mode` instead
- * Removed the `cache.app.simple` service and its corresponding PSR-16 autowiring alias
- * Removed cache-related compiler passes and `RequestDataCollector`
- * Removed the `translator.selector` and `session.save_listener` services
- * Removed `SecurityUserValueResolver`, use `UserValueResolver` instead
- * Removed `routing.loader.service`.
- * Service route loaders must be tagged with `routing.route_loader`. 
- * Added `slugger` service and `SluggerInterface` alias
- * Removed the `lock.store.flock`, `lock.store.semaphore`, `lock.store.memcached.abstract` and `lock.store.redis.abstract` services.
- * Removed the `router.cache_class_prefix` parameter.
-
-4.4.0
------
-
- * Added `lint:container` command to check that services wiring matches type declarations
- * Added `MailerAssertionsTrait`
- * Deprecated support for `templating` engine in `TemplateController`, use Twig instead
- * Deprecated the `$parser` argument of `ControllerResolver::__construct()` and `DelegatingLoader::__construct()`
- * Deprecated the `controller_name_converter` and `resolve_controller_name_subscriber` services
- * The `ControllerResolver` and `DelegatingLoader` classes have been marked as `final`
- * Added support for configuring chained cache pools
- * Deprecated calling `WebTestCase::createClient()` while a kernel has been booted, ensure the kernel is shut down before calling the method
- * Deprecated `routing.loader.service`, use `routing.loader.container` instead.
- * Not tagging service route loaders with `routing.route_loader` has been deprecated.
- * Overriding the methods `KernelTestCase::tearDown()` and `WebTestCase::tearDown()` without the `void` return-type is deprecated.
- * Added new `error_controller` configuration to handle system exceptions
- * Added sort option for `translation:update` command.
- * [BC Break] The `framework.messenger.routing.senders` config key is not deeply merged anymore.
- * Added `secrets:*` commands to deal with secrets seamlessly.
- * Made `framework.session.handler_id` accept a DSN
- * Marked the `RouterDataCollector` class as `@final`.
- * [BC Break] The `framework.messenger.buses.<name>.middleware` config key is not deeply merged anymore.
-
 4.3.0
 -----
 

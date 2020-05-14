@@ -1,5 +1,5 @@
 {
-    "Version": "36.1",
+    "Version": "36",
     "Names": {
         "af": "Afrikaans Simi",
         "agq": "Aghem Simi",
@@ -50,6 +50,7 @@
         "en": "Ingles Simi",
         "eo": "Esperanto Simi",
         "es": "Español Simi",
+        "es_419": "Español Simi (Latino América)",
         "et": "Estonio Simi",
         "eu": "Euskera Simi",
         "ewo": "Ewondo Simi",
@@ -147,6 +148,7 @@
         "nds": "Bajo Alemán Simi",
         "ne": "Nepali Simi",
         "nl": "Neerlandes Simi",
+        "nl_BE": "Flamenco Simi",
         "nmg": "Kwasio Ngumba Simi",
         "nn": "Noruego Nynorsk Simi",
         "nnh": "Ngiemboon Simi",
@@ -200,6 +202,7 @@
         "su": "Sundanés Simi",
         "sv": "Sueco Simi",
         "sw": "Suajili Simi",
+        "sw_CD": "Suajili Simi (Congo (RDC))",
         "syr": "Siriaco Simi",
         "ta": "Tamil Simi",
         "te": "Telugu Simi",
@@ -232,13 +235,8 @@
         "yue": "Cantonés Simi",
         "zgh": "Bereber Marroquí Estándar Simi",
         "zh": "Chino Simi",
-        "zu": "Isizulu Simi"
-    },
-    "LocalizedNames": {
-        "es_419": "Español Simi (Latino América)",
-        "nl_BE": "Flamenco Simi",
-        "sw_CD": "Suajili Simi (Congo (RDC))",
         "zh_Hans": "Chino Simplificado Simi",
-        "zh_Hant": "Chino Tradicional Simi"
+        "zh_Hant": "Chino Tradicional Simi",
+        "zu": "Isizulu Simi"
     }
 }

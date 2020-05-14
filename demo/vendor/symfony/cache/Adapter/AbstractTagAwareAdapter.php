@@ -29,6 +29,7 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
  * @author André Rømcke <andre.romcke+symfony@gmail.com>
  *
  * @internal
+ * @experimental in 4.3
  */
 abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagAwareCacheInterface, LoggerAwareInterface, ResettableInterface
 {
@@ -41,7 +42,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
     {
         $this->namespace = '' === $namespace ? '' : CacheItem::validateKey($namespace).':';
         if (null !== $this->maxIdLength && \strlen($namespace) > $this->maxIdLength - 24) {
-            throw new InvalidArgumentException(sprintf('Namespace must be %d chars max, %d given ("%s").', $this->maxIdLength - 24, \strlen($namespace), $namespace));
+            throw new InvalidArgumentException(sprintf('Namespace must be %d chars max, %d given ("%s")', $this->maxIdLength - 24, \strlen($namespace), $namespace));
         }
         $this->createCacheItem = \Closure::bind(
             static function ($key, $value, $isHit) use ($defaultLifetime) {
@@ -128,23 +129,17 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
      *
      * @return array The identifiers that failed to be cached or a boolean stating if caching succeeded or not
      */
-    abstract protected function doSave(array $values, int $lifetime, array $addTagData = [], array $removeTagData = []): array;
+    abstract protected function doSave(array $values, ?int $lifetime, array $addTagData = [], array $removeTagData = []): array;
 
     /**
      * Removes multiple items from the pool and their corresponding tags.
      *
-     * @param array $ids An array of identifiers that should be removed from the pool
+     * @param array $ids     An array of identifiers that should be removed from the pool
+     * @param array $tagData Optional array of tag identifiers => key identifiers that should be removed from the pool
      *
      * @return bool True if the items were successfully removed, false otherwise
      */
-    abstract protected function doDelete(array $ids);
-
-    /**
-     * Removes relations between tags and deleted items.
-     *
-     * @param array $tagData Array of tag => key identifiers that should be removed from the pool
-     */
-    abstract protected function doDeleteTagRelations(array $tagData): bool;
+    abstract protected function doDelete(array $ids, array $tagData = []): bool;
 
     /**
      * Invalidates cached items using tags.
@@ -156,21 +151,9 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
     abstract protected function doInvalidate(array $tagIds): bool;
 
     /**
-     * Delete items and yields the tags they were bound to.
-     */
-    protected function doDeleteYieldTags(array $ids): iterable
-    {
-        foreach ($this->doFetch($ids) as $id => $value) {
-            yield $id => \is_array($value) && \is_array($value['tags'] ?? null) ? $value['tags'] : [];
-        }
-
-        $this->doDelete($ids);
-    }
-
-    /**
      * {@inheritdoc}
      */
-    public function commit(): bool
+    public function commit()
     {
         $ok = true;
         $byLifetime = $this->mergeByLifetime;
@@ -229,14 +212,15 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
 
     /**
      * {@inheritdoc}
+     *
+     * Overloaded in order to deal with tags for adjusted doDelete() signature.
      */
-    public function deleteItems(array $keys): bool
+    public function deleteItems(array $keys)
     {
         if (!$keys) {
             return true;
         }
 
-        $ok = true;
         $ids = [];
         $tagData = [];
 
@@ -246,21 +230,23 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
         }
 
         try {
-            foreach ($this->doDeleteYieldTags(array_values($ids)) as $id => $tags) {
-                foreach ($tags as $tag) {
+            foreach ($this->doFetch($ids) as $id => $value) {
+                foreach ($value['tags'] ?? [] as $tag) {
                     $tagData[$this->getId(self::TAGS_PREFIX.$tag)][] = $id;
                 }
             }
         } catch (\Exception $e) {
-            $ok = false;
+            // ignore unserialization failures
         }
 
         try {
-            if ((!$tagData || $this->doDeleteTagRelations($tagData)) && $ok) {
+            if ($this->doDelete(array_values($ids), $tagData)) {
                 return true;
             }
         } catch (\Exception $e) {
         }
+
+        $ok = true;
 
         // When bulk-delete failed, retry each item individually
         foreach ($ids as $key => $id) {

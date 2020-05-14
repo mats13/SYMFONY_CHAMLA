@@ -29,11 +29,14 @@ final class ParameterBagUtils
      *
      * Paths like foo[bar] will be evaluated to find deeper items in nested data structures.
      *
+     * @param ParameterBag $parameters The parameter bag
+     * @param string       $path       The key
+     *
      * @return mixed
      *
      * @throws InvalidArgumentException when the given path is malformed
      */
-    public static function getParameterBagValue(ParameterBag $parameters, string $path)
+    public static function getParameterBagValue(ParameterBag $parameters, $path)
     {
         if (false === $pos = strpos($path, '[')) {
             return $parameters->get($path);
@@ -61,11 +64,14 @@ final class ParameterBagUtils
      *
      * Paths like foo[bar] will be evaluated to find deeper items in nested data structures.
      *
+     * @param Request $request The request
+     * @param string  $path    The key
+     *
      * @return mixed
      *
      * @throws InvalidArgumentException when the given path is malformed
      */
-    public static function getRequestParameterValue(Request $request, string $path)
+    public static function getRequestParameterValue(Request $request, $path)
     {
         if (false === $pos = strpos($path, '[')) {
             return $request->get($path);

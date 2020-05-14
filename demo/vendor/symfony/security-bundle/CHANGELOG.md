@@ -1,31 +1,6 @@
 CHANGELOG
 =========
 
-5.0.0
------
-
- * The `switch_user.stateless` firewall option has been removed.
- * Removed the ability to configure encoders using `argon2i` or `bcrypt` as algorithm, use `auto` instead
- * The `simple_form` and `simple_preauth` authentication listeners have been removed,
-   use Guard instead.
- * The `SimpleFormFactory` and `SimplePreAuthenticationFactory` classes have been removed,
-   use Guard instead.
- * Removed `LogoutUrlHelper` and `SecurityHelper` templating helpers, use Twig instead
- * Removed the `logout_on_user_change` firewall option
- * Removed the `threads` encoder option
- * Removed the `security.authentication.trust_resolver.anonymous_class` parameter
- * Removed the `security.authentication.trust_resolver.rememberme_class` parameter
- * Removed the `security.user.provider.in_memory.user` service.
-
-4.4.0
------
-
- * Added `anonymous: lazy` mode to firewalls to make them (not) start the session as late as possible
- * Added `migrate_from` option to encoders configuration.
- * Added new `argon2id` encoder, undeprecated the `bcrypt` and `argon2i` ones (using `auto` is still recommended by default.)
- * Deprecated the usage of "query_string" without a "search_dn" and a "search_password" config key in Ldap factories.
- * Marked the `SecurityDataCollector` class as `@final`.
-
 4.3.0
 -----
 
@@ -34,6 +9,7 @@ CHANGELOG
    option is deprecated and will be disabled in Symfony 5.0. This affects to cookies
    with dashes in their names. For example, starting from Symfony 5.0, the `my-cookie`
    name will delete `my-cookie` (with a dash) instead of `my_cookie` (with an underscore).
+ * Deprecated configuring encoders using `argon2i` as algorithm, use `auto` instead
 
 4.2.0
 -----

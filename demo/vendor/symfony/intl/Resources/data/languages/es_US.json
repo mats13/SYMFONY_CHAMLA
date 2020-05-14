@@ -1,5 +1,5 @@
 {
-    "Version": "36.1",
+    "Version": "36",
     "Names": {
         "ace": "acehnés",
         "alt": "altái meridional",
@@ -28,6 +28,7 @@
         "lus": "lushai",
         "mga": "irlandés medieval",
         "nan": "nan",
+        "nl_BE": "flamenco",
         "nr": "ndebele meridional",
         "nso": "sotho septentrional",
         "pcm": "pcm",
@@ -37,17 +38,14 @@
         "sma": "sami meridional",
         "ss": "siswati",
         "st": "sesotho meridional",
+        "sw_CD": "swahili del Congo",
         "syr": "siriaco",
         "tet": "tetún",
         "tn": "setchwana",
         "tyv": "tuviniano",
         "wo": "wolof",
         "wuu": "wuu",
-        "xal": "kalmyk"
-    },
-    "LocalizedNames": {
-        "nl_BE": "flamenco",
-        "sw_CD": "swahili del Congo",
+        "xal": "kalmyk",
         "zh_Hans": "chino simplificado",
         "zh_Hant": "chino tradicional"
     }

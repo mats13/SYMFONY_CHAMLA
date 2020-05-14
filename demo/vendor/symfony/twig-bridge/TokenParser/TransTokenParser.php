@@ -15,7 +15,6 @@ use Symfony\Bridge\Twig\Node\TransNode;
 use Twig\Error\SyntaxError;
 use Twig\Node\Expression\AbstractExpression;
 use Twig\Node\Expression\ArrayExpression;
-use Twig\Node\Node;
 use Twig\Node\TextNode;
 use Twig\Token;
 use Twig\TokenParser\AbstractTokenParser;
@@ -25,12 +24,12 @@ use Twig\TokenParser\AbstractTokenParser;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-final class TransTokenParser extends AbstractTokenParser
+class TransTokenParser extends AbstractTokenParser
 {
     /**
      * {@inheritdoc}
      */
-    public function parse(Token $token): Node
+    public function parse(Token $token)
     {
         $lineno = $token->getLine();
         $stream = $this->parser->getStream();
@@ -80,7 +79,7 @@ final class TransTokenParser extends AbstractTokenParser
         return new TransNode($body, $domain, $count, $vars, $locale, $lineno, $this->getTag());
     }
 
-    public function decideTransFork(Token $token): bool
+    public function decideTransFork($token)
     {
         return $token->test(['endtrans']);
     }
@@ -88,7 +87,7 @@ final class TransTokenParser extends AbstractTokenParser
     /**
      * {@inheritdoc}
      */
-    public function getTag(): string
+    public function getTag()
     {
         return 'trans';
     }

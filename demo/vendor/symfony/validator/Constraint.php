@@ -70,7 +70,7 @@ abstract class Constraint
     public static function getErrorName($errorCode)
     {
         if (!isset(static::$errorNames[$errorCode])) {
-            throw new InvalidArgumentException(sprintf('The error code "%s" does not exist for constraint of type "%s".', $errorCode, static::class));
+            throw new InvalidArgumentException(sprintf('The error code "%s" does not exist for constraint of type "%s".', $errorCode, \get_called_class()));
         }
 
         return static::$errorNames[$errorCode];
@@ -115,7 +115,7 @@ abstract class Constraint
 
         if (\is_array($options) && isset($options['value']) && !property_exists($this, 'value')) {
             if (null === $defaultOption) {
-                throw new ConstraintDefinitionException(sprintf('No default option is configured for constraint "%s".', static::class));
+                throw new ConstraintDefinitionException(sprintf('No default option is configured for constraint "%s".', \get_class($this)));
             }
 
             $options[$defaultOption] = $options['value'];
@@ -136,7 +136,7 @@ abstract class Constraint
             }
         } elseif (null !== $options && !(\is_array($options) && 0 === \count($options))) {
             if (null === $defaultOption) {
-                throw new ConstraintDefinitionException(sprintf('No default option is configured for constraint "%s".', static::class));
+                throw new ConstraintDefinitionException(sprintf('No default option is configured for constraint "%s".', \get_class($this)));
             }
 
             if (\array_key_exists($defaultOption, $knownOptions)) {
@@ -148,11 +148,11 @@ abstract class Constraint
         }
 
         if (\count($invalidOptions) > 0) {
-            throw new InvalidOptionsException(sprintf('The options "%s" do not exist in constraint "%s".', implode('", "', $invalidOptions), static::class), $invalidOptions);
+            throw new InvalidOptionsException(sprintf('The options "%s" do not exist in constraint "%s".', implode('", "', $invalidOptions), \get_class($this)), $invalidOptions);
         }
 
         if (\count($missingOptions) > 0) {
-            throw new MissingOptionsException(sprintf('The options "%s" must be set for constraint "%s".', implode('", "', array_keys($missingOptions)), static::class), array_keys($missingOptions));
+            throw new MissingOptionsException(sprintf('The options "%s" must be set for constraint "%s".', implode('", "', array_keys($missingOptions)), \get_class($this)), array_keys($missingOptions));
         }
     }
 
@@ -163,11 +163,12 @@ abstract class Constraint
      * this method will be called at most once per constraint instance and
      * option name.
      *
-     * @param mixed $value The value to set
+     * @param string $option The option name
+     * @param mixed  $value  The value to set
      *
      * @throws InvalidOptionsException If an invalid option name is given
      */
-    public function __set(string $option, $value)
+    public function __set($option, $value)
     {
         if ('groups' === $option) {
             $this->groups = (array) $value;
@@ -175,7 +176,7 @@ abstract class Constraint
             return;
         }
 
-        throw new InvalidOptionsException(sprintf('The option "%s" does not exist in constraint "%s".', $option, static::class), [$option]);
+        throw new InvalidOptionsException(sprintf('The option "%s" does not exist in constraint "%s".', $option, \get_class($this)), [$option]);
     }
 
     /**
@@ -193,7 +194,7 @@ abstract class Constraint
      *
      * @internal this method should not be used or overwritten in userland code
      */
-    public function __get(string $option)
+    public function __get($option)
     {
         if ('groups' === $option) {
             $this->groups = [self::DEFAULT_GROUP];
@@ -201,7 +202,7 @@ abstract class Constraint
             return $this->groups;
         }
 
-        throw new InvalidOptionsException(sprintf('The option "%s" does not exist in constraint "%s".', $option, static::class), [$option]);
+        throw new InvalidOptionsException(sprintf('The option "%s" does not exist in constraint "%s".', $option, \get_class($this)), [$option]);
     }
 
     /**
@@ -209,7 +210,7 @@ abstract class Constraint
      *
      * @return bool
      */
-    public function __isset(string $option)
+    public function __isset($option)
     {
         return 'groups' === $option;
     }
@@ -265,7 +266,7 @@ abstract class Constraint
      */
     public function validatedBy()
     {
-        return static::class.'Validator';
+        return \get_class($this).'Validator';
     }
 
     /**
@@ -284,6 +285,8 @@ abstract class Constraint
 
     /**
      * Optimizes the serialized value to minimize storage space.
+     *
+     * @return array The properties to serialize
      *
      * @internal
      */

@@ -12,6 +12,7 @@
 namespace Symfony\Component\Security\Http\Firewall;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\LegacyEventDispatcherProxy;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -48,8 +49,10 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Johannes M. Schmitt <schmittjoh@gmail.com>
  */
-abstract class AbstractAuthenticationListener extends AbstractListener
+abstract class AbstractAuthenticationListener implements ListenerInterface
 {
+    use LegacyListenerTrait;
+
     protected $options;
     protected $logger;
     protected $authenticationManager;
@@ -90,7 +93,13 @@ abstract class AbstractAuthenticationListener extends AbstractListener
             'require_previous_session' => true,
         ], $options);
         $this->logger = $logger;
-        $this->dispatcher = $dispatcher;
+
+        if (null !== $dispatcher && class_exists(LegacyEventDispatcherProxy::class)) {
+            $this->dispatcher = LegacyEventDispatcherProxy::decorate($dispatcher);
+        } else {
+            $this->dispatcher = $dispatcher;
+        }
+
         $this->httpUtils = $httpUtils;
     }
 
@@ -103,22 +112,18 @@ abstract class AbstractAuthenticationListener extends AbstractListener
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function supports(Request $request): ?bool
-    {
-        return $this->requiresAuthentication($request);
-    }
-
-    /**
      * Handles form based authentication.
      *
      * @throws \RuntimeException
      * @throws SessionUnavailableException
      */
-    public function authenticate(RequestEvent $event)
+    public function __invoke(RequestEvent $event)
     {
         $request = $event->getRequest();
+
+        if (!$this->requiresAuthentication($request)) {
+            return;
+        }
 
         if (!$request->hasSession()) {
             throw new \RuntimeException('This authentication method requires a session.');
@@ -172,7 +177,7 @@ abstract class AbstractAuthenticationListener extends AbstractListener
      */
     abstract protected function attemptAuthentication(Request $request);
 
-    private function onFailure(Request $request, AuthenticationException $failed): Response
+    private function onFailure(Request $request, AuthenticationException $failed)
     {
         if (null !== $this->logger) {
             $this->logger->info('Authentication request failed.', ['exception' => $failed]);
@@ -192,7 +197,7 @@ abstract class AbstractAuthenticationListener extends AbstractListener
         return $response;
     }
 
-    private function onSuccess(Request $request, TokenInterface $token): Response
+    private function onSuccess(Request $request, TokenInterface $token)
     {
         if (null !== $this->logger) {
             $this->logger->info('User has been authenticated successfully.', ['username' => $token->getUsername()]);

@@ -1,13 +1,15 @@
 {
-    "Version": "36.1",
+    "Version": "36",
     "Names": {
         "ace": "acehnés",
+        "ar_001": "árabe estándar moderno",
         "arp": "arapaho",
         "bas": "basa",
         "bax": "bamun",
         "bho": "bhoshpuri",
         "bla": "siksika",
         "bua": "buriat",
+        "de_AT": "alemán austriaco",
         "dum": "neerlandés medieval",
         "enm": "inglés medieval",
         "eu": "euskera",
@@ -26,6 +28,7 @@
         "lus": "lushai",
         "mga": "irlandés medieval",
         "nan": "min nan (Chino)",
+        "nl_BE": "flamenco",
         "nr": "ndebele meridional",
         "nso": "sotho septentrional",
         "pa": "punyabí",
@@ -33,19 +36,14 @@
         "shu": "árabe chadiano",
         "ss": "siswati",
         "sw": "suajili",
+        "sw_CD": "suajili del Congo",
         "syr": "siriaco",
         "tet": "tetún",
         "tn": "setswana",
         "tyv": "tuviniano",
         "wuu": "wuu",
         "xal": "kalmyk",
-        "zgh": "tamazight marroquí estándar"
-    },
-    "LocalizedNames": {
-        "ar_001": "árabe estándar moderno",
-        "de_AT": "alemán austriaco",
-        "nl_BE": "flamenco",
-        "sw_CD": "suajili del Congo",
+        "zgh": "tamazight marroquí estándar",
         "zh_Hans": "chino simplificado",
         "zh_Hant": "chino tradicional"
     }

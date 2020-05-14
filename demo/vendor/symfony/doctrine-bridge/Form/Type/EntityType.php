@@ -47,15 +47,12 @@ class EntityType extends DoctrineType
      * Return the default loader object.
      *
      * @param QueryBuilder $queryBuilder
+     * @param string       $class
      *
      * @return ORMQueryBuilderLoader
      */
-    public function getLoader(ObjectManager $manager, $queryBuilder, string $class)
+    public function getLoader(ObjectManager $manager, $queryBuilder, $class)
     {
-        if (!$queryBuilder instanceof QueryBuilder) {
-            throw new \TypeError(sprintf('Expected an instance of "%s", but got "%s".', QueryBuilder::class, \is_object($queryBuilder) ? \get_class($queryBuilder) : \gettype($queryBuilder)));
-        }
-
         return new ORMQueryBuilderLoader($queryBuilder);
     }
 
@@ -73,15 +70,13 @@ class EntityType extends DoctrineType
      *
      * @param QueryBuilder $queryBuilder
      *
+     * @return array
+     *
      * @internal This method is public to be usable as callback. It should not
      *           be used in user code.
      */
-    public function getQueryBuilderPartsForCachingHash($queryBuilder): ?array
+    public function getQueryBuilderPartsForCachingHash($queryBuilder)
     {
-        if (!$queryBuilder instanceof QueryBuilder) {
-            throw new \TypeError(sprintf('Expected an instance of "%s", but got "%s".', QueryBuilder::class, \is_object($queryBuilder) ? \get_class($queryBuilder) : \gettype($queryBuilder)));
-        }
-
         return [
             $queryBuilder->getQuery()->getSQL(),
             array_map([$this, 'parameterToArray'], $queryBuilder->getParameters()->toArray()),
@@ -90,11 +85,11 @@ class EntityType extends DoctrineType
 
     /**
      * Converts a query parameter to an array.
+     *
+     * @return array The array representation of the parameter
      */
-    private function parameterToArray(Parameter $parameter): array
+    private function parameterToArray(Parameter $parameter)
     {
         return [$parameter->getName(), $parameter->getType(), $parameter->getValue()];
     }
 }
-
-interface_exists(ObjectManager::class);

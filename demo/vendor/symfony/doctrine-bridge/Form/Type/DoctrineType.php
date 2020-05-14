@@ -49,10 +49,14 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
      *
      * For backwards compatibility, objects are cast to strings by default.
      *
+     * @param object $choice The object
+     *
+     * @return string The string representation of the object
+     *
      * @internal This method is public to be usable as callback. It should not
      *           be used in user code.
      */
-    public static function createChoiceLabel(object $choice): string
+    public static function createChoiceLabel($choice)
     {
         return (string) $choice;
     }
@@ -64,14 +68,17 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
      * a single-column integer ID. In that case, the value of the field is
      * the ID of the object. That ID is also used as field name.
      *
-     * @param int|string $key   The choice key
-     * @param string     $value The choice value. Corresponds to the object's
-     *                          ID here.
+     * @param object     $choice The object
+     * @param int|string $key    The choice key
+     * @param string     $value  The choice value. Corresponds to the object's
+     *                           ID here.
+     *
+     * @return string The field name
      *
      * @internal This method is public to be usable as callback. It should not
      *           be used in user code.
      */
-    public static function createChoiceName(object $choice, $key, string $value): string
+    public static function createChoiceName($choice, $key, $value)
     {
         return str_replace('-', '_', (string) $value);
     }
@@ -81,18 +88,17 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
      * For instance in ORM two query builders with an equal SQL string and
      * equal parameters are considered to be equal.
      *
-     * @param object $queryBuilder A query builder, type declaration is not present here as there
-     *                             is no common base class for the different implementations
+     * @param object $queryBuilder
      *
-     * @return array|null Array with important QueryBuilder parts or null if
-     *                    they can't be determined
+     * @return array|false Array with important QueryBuilder parts or false if
+     *                     they can't be determined
      *
      * @internal This method is public to be usable as callback. It should not
      *           be used in user code.
      */
-    public function getQueryBuilderPartsForCachingHash($queryBuilder): ?array
+    public function getQueryBuilderPartsForCachingHash($queryBuilder)
     {
-        return null;
+        return false;
     }
 
     public function __construct(ManagerRegistry $registry)
@@ -121,7 +127,7 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
                 // If there is no QueryBuilder we can safely cache DoctrineChoiceLoader,
                 // also if concrete Type can return important QueryBuilder parts to generate
                 // hash key we go for it as well
-                if (!$options['query_builder'] || null !== $qbParts = $this->getQueryBuilderPartsForCachingHash($options['query_builder'])) {
+                if (!$options['query_builder'] || false !== ($qbParts = $this->getQueryBuilderPartsForCachingHash($options['query_builder']))) {
                     $hash = CachingFactoryDecorator::generateHash([
                         $options['em'],
                         $options['class'],
@@ -144,7 +150,8 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
                     $options['em'],
                     $options['class'],
                     $options['id_reader'],
-                    $entityLoader
+                    $entityLoader,
+                    false
                 );
 
                 if (null !== $hash) {
@@ -261,11 +268,12 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
     /**
      * Return the default loader object.
      *
-     * @param mixed $queryBuilder
+     * @param mixed  $queryBuilder
+     * @param string $class
      *
      * @return EntityLoaderInterface
      */
-    abstract public function getLoader(ObjectManager $manager, $queryBuilder, string $class);
+    abstract public function getLoader(ObjectManager $manager, $queryBuilder, $class);
 
     public function getParent()
     {
@@ -277,5 +285,3 @@ abstract class DoctrineType extends AbstractType implements ResetInterface
         $this->choiceLoaders = [];
     }
 }
-
-interface_exists(ObjectManager::class);

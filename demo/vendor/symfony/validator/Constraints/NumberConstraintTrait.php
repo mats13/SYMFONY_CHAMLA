@@ -27,11 +27,11 @@ trait NumberConstraintTrait
         }
 
         if (isset($options['propertyPath'])) {
-            throw new ConstraintDefinitionException(sprintf('The "propertyPath" option of the "%s" constraint cannot be set.', static::class));
+            throw new ConstraintDefinitionException(sprintf('The "propertyPath" option of the "%s" constraint cannot be set.', \get_class($this)));
         }
 
         if (isset($options['value'])) {
-            throw new ConstraintDefinitionException(sprintf('The "value" option of the "%s" constraint cannot be set.', static::class));
+            throw new ConstraintDefinitionException(sprintf('The "value" option of the "%s" constraint cannot be set.', \get_class($this)));
         }
 
         $options['value'] = 0;

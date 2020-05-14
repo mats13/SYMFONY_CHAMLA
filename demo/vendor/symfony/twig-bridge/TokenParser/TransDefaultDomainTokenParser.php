@@ -12,7 +12,6 @@
 namespace Symfony\Bridge\Twig\TokenParser;
 
 use Symfony\Bridge\Twig\Node\TransDefaultDomainNode;
-use Twig\Node\Node;
 use Twig\Token;
 use Twig\TokenParser\AbstractTokenParser;
 
@@ -21,12 +20,12 @@ use Twig\TokenParser\AbstractTokenParser;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-final class TransDefaultDomainTokenParser extends AbstractTokenParser
+class TransDefaultDomainTokenParser extends AbstractTokenParser
 {
     /**
      * {@inheritdoc}
      */
-    public function parse(Token $token): Node
+    public function parse(Token $token)
     {
         $expr = $this->parser->getExpressionParser()->parseExpression();
 
@@ -38,7 +37,7 @@ final class TransDefaultDomainTokenParser extends AbstractTokenParser
     /**
      * {@inheritdoc}
      */
-    public function getTag(): string
+    public function getTag()
     {
         return 'trans_default_domain';
     }

@@ -64,18 +64,12 @@ trait MicroKernelTrait
                 ],
             ]);
 
-            if (!$container->hasDefinition('kernel')) {
+            if ($this instanceof EventSubscriberInterface) {
                 $container->register('kernel', static::class)
                     ->setSynthetic(true)
                     ->setPublic(true)
+                    ->addTag('kernel.event_subscriber')
                 ;
-            }
-
-            $kernelDefinition = $container->getDefinition('kernel');
-            $kernelDefinition->addTag('routing.route_loader');
-
-            if ($this instanceof EventSubscriberInterface) {
-                $kernelDefinition->addTag('kernel.event_subscriber');
             }
 
             $this->configureContainer($container, $loader);

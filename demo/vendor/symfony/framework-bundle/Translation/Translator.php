@@ -90,7 +90,7 @@ class Translator extends BaseTranslator implements WarmableInterface
     /**
      * {@inheritdoc}
      */
-    public function warmUp(string $cacheDir)
+    public function warmUp($cacheDir)
     {
         // skip warmUp when translator doesn't use cache
         if (null === $this->options['cache_dir']) {
@@ -108,7 +108,7 @@ class Translator extends BaseTranslator implements WarmableInterface
         }
     }
 
-    public function addResource(string $format, $resource, string $locale, string $domain = null)
+    public function addResource($format, $resource, $locale, $domain = null)
     {
         if ($this->resourceFiles) {
             $this->addResourceFiles();
@@ -119,7 +119,7 @@ class Translator extends BaseTranslator implements WarmableInterface
     /**
      * {@inheritdoc}
      */
-    protected function initializeCatalogue(string $locale)
+    protected function initializeCatalogue($locale)
     {
         $this->initialize();
         parent::initializeCatalogue($locale);
@@ -128,7 +128,7 @@ class Translator extends BaseTranslator implements WarmableInterface
     /**
      * @internal
      */
-    protected function doLoadCatalogue(string $locale): void
+    protected function doLoadCatalogue($locale): void
     {
         parent::doLoadCatalogue($locale);
 
@@ -164,10 +164,7 @@ class Translator extends BaseTranslator implements WarmableInterface
         foreach ($filesByLocale as $locale => $files) {
             foreach ($files as $key => $file) {
                 // filename is domain.locale.format
-                $fileNameParts = explode('.', basename($file));
-                $format = array_pop($fileNameParts);
-                $locale = array_pop($fileNameParts);
-                $domain = implode('.', $fileNameParts);
+                list($domain, $locale, $format) = explode('.', basename($file), 3);
                 $this->addResource($format, $file, $locale, $domain);
             }
         }

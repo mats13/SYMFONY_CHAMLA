@@ -229,10 +229,18 @@ class StopwatchEvent
     /**
      * Formats a time.
      *
+     * @param int|float $time A raw time
+     *
+     * @return float The formatted time
+     *
      * @throws \InvalidArgumentException When the raw time is not valid
      */
-    private function formatTime(float $time): float
+    private function formatTime($time)
     {
+        if (!is_numeric($time)) {
+            throw new \InvalidArgumentException('The time must be a numerical value');
+        }
+
         return round($time, 1);
     }
 

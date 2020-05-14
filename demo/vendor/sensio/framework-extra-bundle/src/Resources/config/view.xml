@@ -5,17 +5,14 @@
     xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="sensio_framework_extra.view.guesser" class="Sensio\Bundle\FrameworkExtraBundle\Templating\TemplateGuesser">
+        <service id="sensio_framework_extra.view.guesser" class="Sensio\Bundle\FrameworkExtraBundle\Templating\TemplateGuesser" public="false">
             <argument type="service" id="kernel" />
         </service>
 
-        <service id="sensio_framework_extra.view.listener" class="Sensio\Bundle\FrameworkExtraBundle\EventListener\TemplateListener">
+        <service id="sensio_framework_extra.view.listener" class="Sensio\Bundle\FrameworkExtraBundle\EventListener\TemplateListener" public="false">
             <tag name="kernel.event_subscriber" />
-            <tag name="container.service_subscriber" id="twig" />
             <argument type="service" id="sensio_framework_extra.view.guesser" />
-            <call method="setContainer">
-                <argument type="service" id="Psr\Container\ContainerInterface" on-invalid="ignore" />
-            </call>
+            <argument type="service" id="twig" on-invalid="null" />
         </service>
     </services>
 </container>

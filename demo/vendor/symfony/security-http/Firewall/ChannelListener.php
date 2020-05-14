@@ -12,7 +12,6 @@
 namespace Symfony\Component\Security\Http\Firewall;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Security\Http\AccessMapInterface;
 use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface;
@@ -23,10 +22,12 @@ use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface
  *
  * @author Fabien Potencier <fabien@symfony.com>
  *
- * @final
+ * @final since Symfony 4.3
  */
-class ChannelListener extends AbstractListener
+class ChannelListener implements ListenerInterface
 {
+    use LegacyListenerTrait;
+
     private $map;
     private $authenticationEntryPoint;
     private $logger;
@@ -41,8 +42,10 @@ class ChannelListener extends AbstractListener
     /**
      * Handles channel management.
      */
-    public function supports(Request $request): ?bool
+    public function __invoke(RequestEvent $event)
     {
+        $request = $event->getRequest();
+
         list(, $channel) = $this->map->getPatterns($request);
 
         if ('https' === $channel && !$request->isSecure()) {
@@ -56,7 +59,11 @@ class ChannelListener extends AbstractListener
                 }
             }
 
-            return true;
+            $response = $this->authenticationEntryPoint->start($request);
+
+            $event->setResponse($response);
+
+            return;
         }
 
         if ('http' === $channel && $request->isSecure()) {
@@ -64,18 +71,9 @@ class ChannelListener extends AbstractListener
                 $this->logger->info('Redirecting to HTTP.');
             }
 
-            return true;
+            $response = $this->authenticationEntryPoint->start($request);
+
+            $event->setResponse($response);
         }
-
-        return false;
-    }
-
-    public function authenticate(RequestEvent $event)
-    {
-        $request = $event->getRequest();
-
-        $response = $this->authenticationEntryPoint->start($request);
-
-        $event->setResponse($response);
     }
 }

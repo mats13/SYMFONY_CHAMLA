@@ -41,13 +41,13 @@ final class MetadataAwareNameConverter implements AdvancedNameConverterInterface
     /**
      * {@inheritdoc}
      */
-    public function normalize(string $propertyName, string $class = null, string $format = null, array $context = []): string
+    public function normalize($propertyName, string $class = null, string $format = null, array $context = [])
     {
         if (null === $class) {
             return $this->normalizeFallback($propertyName, $class, $format, $context);
         }
 
-        if (!\array_key_exists($class, self::$normalizeCache) || !\array_key_exists($propertyName, self::$normalizeCache[$class])) {
+        if (!isset(self::$normalizeCache[$class][$propertyName])) {
             self::$normalizeCache[$class][$propertyName] = $this->getCacheValueForNormalization($propertyName, $class);
         }
 
@@ -57,50 +57,50 @@ final class MetadataAwareNameConverter implements AdvancedNameConverterInterface
     /**
      * {@inheritdoc}
      */
-    public function denormalize(string $propertyName, string $class = null, string $format = null, array $context = []): string
+    public function denormalize($propertyName, string $class = null, string $format = null, array $context = [])
     {
         if (null === $class) {
             return $this->denormalizeFallback($propertyName, $class, $format, $context);
         }
 
         $cacheKey = $this->getCacheKey($class, $context);
-        if (!\array_key_exists($cacheKey, self::$denormalizeCache) || !\array_key_exists($propertyName, self::$denormalizeCache[$cacheKey])) {
+        if (!isset(self::$denormalizeCache[$cacheKey][$propertyName])) {
             self::$denormalizeCache[$cacheKey][$propertyName] = $this->getCacheValueForDenormalization($propertyName, $class, $context);
         }
 
         return self::$denormalizeCache[$cacheKey][$propertyName] ?? $this->denormalizeFallback($propertyName, $class, $format, $context);
     }
 
-    private function getCacheValueForNormalization(string $propertyName, string $class): ?string
+    private function getCacheValueForNormalization($propertyName, string $class)
     {
         if (!$this->metadataFactory->hasMetadataFor($class)) {
             return null;
         }
 
         $attributesMetadata = $this->metadataFactory->getMetadataFor($class)->getAttributesMetadata();
-        if (!\array_key_exists($propertyName, $attributesMetadata)) {
+        if (!isset($attributesMetadata[$propertyName])) {
             return null;
         }
 
         return $attributesMetadata[$propertyName]->getSerializedName() ?? null;
     }
 
-    private function normalizeFallback(string $propertyName, string $class = null, string $format = null, array $context = []): string
+    private function normalizeFallback($propertyName, string $class = null, string $format = null, array $context = [])
     {
         return $this->fallbackNameConverter ? $this->fallbackNameConverter->normalize($propertyName, $class, $format, $context) : $propertyName;
     }
 
-    private function getCacheValueForDenormalization(string $propertyName, string $class, array $context): ?string
+    private function getCacheValueForDenormalization($propertyName, string $class, array $context)
     {
         $cacheKey = $this->getCacheKey($class, $context);
-        if (!\array_key_exists($cacheKey, self::$attributesMetadataCache)) {
+        if (!isset(self::$attributesMetadataCache[$cacheKey])) {
             self::$attributesMetadataCache[$cacheKey] = $this->getCacheValueForAttributesMetadata($class, $context);
         }
 
         return self::$attributesMetadataCache[$cacheKey][$propertyName] ?? null;
     }
 
-    private function denormalizeFallback(string $propertyName, string $class = null, string $format = null, array $context = []): string
+    private function denormalizeFallback($propertyName, string $class = null, string $format = null, array $context = [])
     {
         return $this->fallbackNameConverter ? $this->fallbackNameConverter->denormalize($propertyName, $class, $format, $context) : $propertyName;
     }

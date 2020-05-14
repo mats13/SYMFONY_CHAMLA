@@ -51,6 +51,7 @@ class ContainerDebugCommand extends Command
         $this
             ->setDefinition([
                 new InputArgument('name', InputArgument::OPTIONAL, 'A service name (foo)'),
+                new InputOption('show-private', null, InputOption::VALUE_NONE, 'Used to show public *and* private services (deprecated)'),
                 new InputOption('show-arguments', null, InputOption::VALUE_NONE, 'Used to show arguments in services'),
                 new InputOption('show-hidden', null, InputOption::VALUE_NONE, 'Used to show hidden (internal) services'),
                 new InputOption('tag', null, InputOption::VALUE_REQUIRED, 'Shows all services with a specific tag'),
@@ -72,10 +73,6 @@ The <info>%command.name%</info> command displays all configured <comment>public<
 To get specific information about a service, specify its name:
 
   <info>php %command.full_name% validator</info>
-
-To get specific information about a service including all its arguments, use the <info>--show-arguments</info> flag:
-
-  <info>php %command.full_name% validator --show-arguments</info>
 
 To see available types that can be used for autowiring, use the <info>--types</info> flag:
 
@@ -118,8 +115,12 @@ EOF
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('show-private')) {
+            @trigger_error('The "--show-private" option no longer has any effect and is deprecated since Symfony 4.1.', E_USER_DEPRECATED);
+        }
+
         $io = new SymfonyStyle($input, $output);
         $errorIo = $io->getErrorStyle();
 
@@ -163,10 +164,6 @@ EOF
 
         try {
             $helper->describe($io, $object, $options);
-
-            if (isset($options['id']) && isset($this->getApplication()->getKernel()->getContainer()->getRemovedIds()[$options['id']])) {
-                $errorIo->note(sprintf('The "%s" service or alias has been removed or inlined when the container was compiled.', $options['id']));
-            }
         } catch (ServiceNotFoundException $e) {
             if ('' !== $e->getId() && '@' === $e->getId()[0]) {
                 throw new ServiceNotFoundException($e->getId(), $e->getSourceId(), null, [substr($e->getId(), 1)]);
@@ -184,8 +181,6 @@ EOF
                 $errorIo->comment('To search for a specific service, re-run this command with a search term. (e.g. <comment>debug:container log</comment>)');
             }
         }
-
-        return 0;
     }
 
     /**
@@ -215,9 +210,11 @@ EOF
     /**
      * Loads the ContainerBuilder from the cache.
      *
+     * @return ContainerBuilder
+     *
      * @throws \LogicException
      */
-    protected function getContainerBuilder(): ContainerBuilder
+    protected function getContainerBuilder()
     {
         if ($this->containerBuilder) {
             return $this->containerBuilder;
@@ -240,7 +237,7 @@ EOF
         return $this->containerBuilder = $container;
     }
 
-    private function findProperServiceName(InputInterface $input, SymfonyStyle $io, ContainerBuilder $builder, string $name, bool $showHidden): string
+    private function findProperServiceName(InputInterface $input, SymfonyStyle $io, ContainerBuilder $builder, string $name, bool $showHidden)
     {
         $name = ltrim($name, '\\');
 
@@ -260,7 +257,7 @@ EOF
         return $io->choice('Select one of the following services to display its information', $matchingServices);
     }
 
-    private function findServiceIdsContaining(ContainerBuilder $builder, string $name, bool $showHidden): array
+    private function findServiceIdsContaining(ContainerBuilder $builder, string $name, bool $showHidden)
     {
         $serviceIds = $builder->getServiceIds();
         $foundServiceIds = $foundServiceIdsIgnoringBackslashes = [];
@@ -282,7 +279,7 @@ EOF
     /**
      * @internal
      */
-    public function filterToServiceTypes(string $serviceId): bool
+    public function filterToServiceTypes($serviceId)
     {
         // filter out things that could not be valid class names
         if (!preg_match('/(?(DEFINE)(?<V>[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+))^(?&V)(?:\\\\(?&V))*+(?: \$(?&V))?$/', $serviceId)) {

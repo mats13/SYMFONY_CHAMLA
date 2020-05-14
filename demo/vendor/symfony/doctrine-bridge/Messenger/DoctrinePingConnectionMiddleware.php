@@ -11,29 +11,41 @@
 
 namespace Symfony\Bridge\Doctrine\Messenger;
 
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
+use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
-use Symfony\Component\Messenger\Stamp\ConsumedByWorkerStamp;
 
 /**
  * Checks whether the connection is still open or reconnects otherwise.
  *
  * @author Fuong <insidestyles@gmail.com>
+ *
+ * @experimental in 4.3
  */
-class DoctrinePingConnectionMiddleware extends AbstractDoctrineMiddleware
+class DoctrinePingConnectionMiddleware implements MiddlewareInterface
 {
-    protected function handleForManager(EntityManagerInterface $entityManager, Envelope $envelope, StackInterface $stack): Envelope
-    {
-        if (null !== $envelope->last(ConsumedByWorkerStamp::class)) {
-            $this->pingConnection($entityManager);
-        }
+    private $managerRegistry;
+    private $entityManagerName;
 
-        return $stack->next()->handle($envelope, $stack);
+    public function __construct(ManagerRegistry $managerRegistry, string $entityManagerName = null)
+    {
+        $this->managerRegistry = $managerRegistry;
+        $this->entityManagerName = $entityManagerName;
     }
 
-    private function pingConnection(EntityManagerInterface $entityManager)
+    /**
+     * {@inheritdoc}
+     */
+    public function handle(Envelope $envelope, StackInterface $stack): Envelope
     {
+        try {
+            $entityManager = $this->managerRegistry->getManager($this->entityManagerName);
+        } catch (\InvalidArgumentException $e) {
+            throw new UnrecoverableMessageHandlingException($e->getMessage(), 0, $e);
+        }
+
         $connection = $entityManager->getConnection();
 
         if (!$connection->ping()) {
@@ -44,5 +56,7 @@ class DoctrinePingConnectionMiddleware extends AbstractDoctrineMiddleware
         if (!$entityManager->isOpen()) {
             $this->managerRegistry->resetManager($this->entityManagerName);
         }
+
+        return $stack->next()->handle($envelope, $stack);
     }
 }

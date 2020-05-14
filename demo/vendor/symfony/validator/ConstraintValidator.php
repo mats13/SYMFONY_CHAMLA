@@ -21,8 +21,8 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 abstract class ConstraintValidator implements ConstraintValidatorInterface
 {
     /**
-     * Whether to format {@link \DateTime} objects, either with the {@link \IntlDateFormatter}
-     * (if it is available) or as RFC-3339 dates ("Y-m-d H:i:s").
+     * Whether to format {@link \DateTime} objects as RFC-3339 dates
+     * ("Y-m-d H:i:s").
      */
     const PRETTY_DATE = 1;
 
@@ -69,8 +69,7 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      * in double quotes ("). Objects, arrays and resources are formatted as
      * "object", "array" and "resource". If the $format bitmask contains
      * the PRETTY_DATE bit, then {@link \DateTime} objects will be formatted
-     * with the {@link \IntlDateFormatter}. If it is not available, they will be
-     * formatted as RFC-3339 dates ("Y-m-d H:i:s").
+     * as RFC-3339 dates ("Y-m-d H:i:s").
      *
      * Be careful when passing message parameters to a constraint violation
      * that (may) contain objects, arrays or resources. These parameters
@@ -84,7 +83,7 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      *
      * @return string The string representation of the passed value
      */
-    protected function formatValue($value, int $format = 0)
+    protected function formatValue($value, $format = 0)
     {
         if (($format & self::PRETTY_DATE) && $value instanceof \DateTimeInterface) {
             if (class_exists('IntlDateFormatter')) {
@@ -148,7 +147,7 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      *
      * @see formatValue()
      */
-    protected function formatValues(array $values, int $format = 0)
+    protected function formatValues(array $values, $format = 0)
     {
         foreach ($values as $key => $value) {
             $values[$key] = $this->formatValue($value, $format);

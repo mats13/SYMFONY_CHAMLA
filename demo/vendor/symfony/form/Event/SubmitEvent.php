@@ -19,6 +19,6 @@ use Symfony\Component\Form\FormEvent;
  *
  * It can be used to change data from the normalized representation of the data.
  */
-final class SubmitEvent extends FormEvent
+class SubmitEvent extends FormEvent
 {
 }

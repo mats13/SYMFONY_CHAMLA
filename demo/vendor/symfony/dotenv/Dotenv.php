@@ -39,10 +39,15 @@ final class Dotenv
 
     /**
      * @var bool If `putenv()` should be used to define environment variables or not.
-     *           Beware that `putenv()` is not thread safe, that's why this setting defaults to false
+     *           Beware that `putenv()` is not thread safe and this setting will default
+     *           to `false` in Symfony 5.0.
      */
-    public function __construct(bool $usePutenv = false)
+    public function __construct(bool $usePutenv = true)
     {
+        if (!\func_num_args()) {
+            @trigger_error(sprintf('The default value of "$usePutenv" argument of "%s" will be changed from "true" to "false" in Symfony 5.0. You should define its value explicitly.', __METHOD__), E_USER_DEPRECATED);
+        }
+
         $this->usePutenv = $usePutenv;
     }
 
@@ -211,7 +216,7 @@ final class Dotenv
         }
     }
 
-    private function lexVarname(): string
+    private function lexVarname()
     {
         // var name + optional export
         if (!preg_match('/(export[ \t]++)?('.self::VARNAME_REGEX.')/A', $this->data, $matches, 0, $this->cursor)) {
@@ -239,7 +244,7 @@ final class Dotenv
         return $matches[2];
     }
 
-    private function lexValue(): string
+    private function lexValue()
     {
         if (preg_match('/[ \t]*+(?:#.*)?$/Am', $this->data, $matches, 0, $this->cursor)) {
             $this->moveCursor($matches[0]);
@@ -332,7 +337,7 @@ final class Dotenv
         return $v;
     }
 
-    private function lexNestedExpression(): string
+    private function lexNestedExpression()
     {
         ++$this->cursor;
         $value = '';
@@ -365,7 +370,7 @@ final class Dotenv
         }
     }
 
-    private function resolveCommands(string $value, array $loadedVars): string
+    private function resolveCommands($value, $loadedVars)
     {
         if (false === strpos($value, '$')) {
             return $value;
@@ -395,11 +400,7 @@ final class Dotenv
             }
 
             $process = method_exists(Process::class, 'fromShellCommandline') ? Process::fromShellCommandline('echo '.$matches[0]) : new Process('echo '.$matches[0]);
-
-            if (!method_exists(Process::class, 'fromShellCommandline')) {
-                // Symfony 3.4 does not inherit env vars by default:
-                $process->inheritEnvironmentVariables();
-            }
+            $process->inheritEnvironmentVariables(true);
 
             $env = [];
             foreach ($this->values as $name => $value) {
@@ -419,7 +420,7 @@ final class Dotenv
         }, $value);
     }
 
-    private function resolveVariables(string $value, array $loadedVars): string
+    private function resolveVariables($value, array $loadedVars)
     {
         if (false === strpos($value, '$')) {
             return $value;
@@ -432,7 +433,6 @@ final class Dotenv
             (?!\()                             # no opening parenthesis
             (?P<opening_brace>\{)?             # optional brace
             (?P<name>'.self::VARNAME_REGEX.')? # var name
-            (?P<default_value>:[-=][^\}]++)?   # optional default value
             (?P<closing_brace>\})?             # optional closing brace
         /x';
 
@@ -464,19 +464,6 @@ final class Dotenv
                 $value = (string) getenv($name);
             }
 
-            if ('' === $value && isset($matches['default_value']) && '' !== $matches['default_value']) {
-                $unsupportedChars = strpbrk($matches['default_value'], '\'"{$');
-                if (false !== $unsupportedChars) {
-                    throw $this->createFormatException(sprintf('Unsupported character "%s" found in the default value of variable "$%s".', $unsupportedChars[0], $name));
-                }
-
-                $value = substr($matches['default_value'], 2);
-
-                if ('=' === $matches['default_value'][1]) {
-                    $this->values[$name] = $value;
-                }
-            }
-
             if (!$matches['opening_brace'] && isset($matches['closing_brace'])) {
                 $value .= '}';
             }
@@ -487,13 +474,13 @@ final class Dotenv
         return $value;
     }
 
-    private function moveCursor(string $text)
+    private function moveCursor($text)
     {
         $this->cursor += \strlen($text);
         $this->lineno += substr_count($text, "\n");
     }
 
-    private function createFormatException(string $message): FormatException
+    private function createFormatException($message)
     {
         return new FormatException($message, new FormatExceptionContext($this->data, $this->path, $this->lineno, $this->cursor));
     }

@@ -29,6 +29,8 @@ use Symfony\Contracts\HttpClient\ResponseStreamInterface;
  * but each request is opened synchronously.
  *
  * @author Nicolas Grekas <p@tchwork.com>
+ *
+ * @experimental in 4.3
  */
 final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterface
 {
@@ -41,17 +43,15 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
     private $multi;
 
     /**
-     * @param array $defaultOptions     Default request's options
+     * @param array $defaultOptions     Default requests' options
      * @param int   $maxHostConnections The maximum number of connections to open
      *
      * @see HttpClientInterface::OPTIONS_DEFAULTS for available options
      */
     public function __construct(array $defaultOptions = [], int $maxHostConnections = 6)
     {
-        $this->defaultOptions['buffer'] = $this->defaultOptions['buffer'] ?? \Closure::fromCallable([__CLASS__, 'shouldBuffer']);
-
         if ($defaultOptions) {
-            [, $this->defaultOptions] = self::prepareRequest(null, null, $defaultOptions, $this->defaultOptions);
+            [, $this->defaultOptions] = self::prepareRequest(null, null, $defaultOptions, self::OPTIONS_DEFAULTS);
         }
 
         $this->multi = new NativeClientState();
@@ -94,7 +94,6 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
             'response_headers' => [],
             'url' => $url,
             'error' => null,
-            'canceled' => false,
             'http_method' => $method,
             'http_code' => 0,
             'redirect_count' => 0,
@@ -116,12 +115,7 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
         if ($onProgress = $options['on_progress']) {
             // Memoize the last progress to ease calling the callback periodically when no network transfer happens
             $lastProgress = [0, 0];
-            $maxDuration = 0 < $options['max_duration'] ? $options['max_duration'] : INF;
-            $onProgress = static function (...$progress) use ($onProgress, &$lastProgress, &$info, $maxDuration) {
-                if ($info['total_time'] >= $maxDuration) {
-                    throw new TransportException(sprintf('Max duration was reached for "%s".', implode('', $info['url'])));
-                }
-
+            $onProgress = static function (...$progress) use ($onProgress, &$lastProgress, &$info) {
                 $progressInfo = $info;
                 $progressInfo['url'] = implode('', $info['url']);
                 unset($progressInfo['size_body']);
@@ -134,13 +128,6 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
                 }
 
                 $onProgress($lastProgress[0], $lastProgress[1], $progressInfo);
-            };
-        } elseif (0 < $options['max_duration']) {
-            $maxDuration = $options['max_duration'];
-            $onProgress = static function () use (&$info, $maxDuration): void {
-                if ($info['total_time'] >= $maxDuration) {
-                    throw new TransportException(sprintf('Max duration was reached for "%s".', implode('', $info['url'])));
-                }
             };
         }
 
@@ -169,7 +156,7 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
             $this->multi->dnsCache = $options['resolve'] + $this->multi->dnsCache;
         }
 
-        $this->logger && $this->logger->info(sprintf('Request: "%s %s"', $method, implode('', $url)));
+        $this->logger && $this->logger->info(sprintf('Request: %s %s', $method, implode('', $url)));
 
         [$host, $port, $url['authority']] = self::dnsResolve($url, $this->multi, $info, $onProgress);
 
@@ -179,10 +166,6 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
 
         if (!isset($options['normalized_headers']['user-agent'])) {
             $options['headers'][] = 'User-Agent: Symfony HttpClient/Native';
-        }
-
-        if (0 < $options['max_duration']) {
-            $options['timeout'] = min($options['max_duration'], $options['timeout']);
         }
 
         $context = [
@@ -238,7 +221,7 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
         if ($responses instanceof NativeResponse) {
             $responses = [$responses];
         } elseif (!is_iterable($responses)) {
-            throw new \TypeError(sprintf('"%s()" expects parameter 1 to be an iterable of NativeResponse objects, "%s" given.', __METHOD__, \is_object($responses) ? \get_class($responses) : \gettype($responses)));
+            throw new \TypeError(sprintf('%s() expects parameter 1 to be an iterable of NativeResponse objects, %s given.', __METHOD__, \is_object($responses) ? \get_class($responses) : \gettype($responses)));
         }
 
         return new ResponseStream(NativeResponse::stream($responses, $timeout));
@@ -258,7 +241,7 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
 
         while ('' !== $data = $body(self::$CHUNK_SIZE)) {
             if (!\is_string($data)) {
-                throw new TransportException(sprintf('Return value of the "body" option callback must be string, "%s" returned.', \gettype($data)));
+                throw new TransportException(sprintf('Return value of the "body" option callback must be string, %s returned.', \gettype($data)));
             }
 
             $result .= $data;
@@ -418,7 +401,7 @@ final class NativeHttpClient implements HttpClientInterface, LoggerAwareInterfac
         };
     }
 
-    private static function configureHeadersAndProxy($context, string $host, array $requestHeaders, ?array $proxy, array $noProxy): bool
+    private static function configureHeadersAndProxy($context, string $host, array $requestHeaders, ?array $proxy, array $noProxy)
     {
         if (null === $proxy) {
             return stream_context_set_option($context, 'http', 'header', $requestHeaders);

@@ -160,10 +160,10 @@ class ViolationPath implements \IteratorAggregate, PropertyPathInterface
     /**
      * {@inheritdoc}
      */
-    public function getElement(int $index)
+    public function getElement($index)
     {
         if (!isset($this->elements[$index])) {
-            throw new OutOfBoundsException(sprintf('The index "%s" is not within the violation path.', $index));
+            throw new OutOfBoundsException(sprintf('The index %s is not within the violation path', $index));
         }
 
         return $this->elements[$index];
@@ -172,10 +172,10 @@ class ViolationPath implements \IteratorAggregate, PropertyPathInterface
     /**
      * {@inheritdoc}
      */
-    public function isProperty(int $index)
+    public function isProperty($index)
     {
         if (!isset($this->isIndex[$index])) {
-            throw new OutOfBoundsException(sprintf('The index "%s" is not within the violation path.', $index));
+            throw new OutOfBoundsException(sprintf('The index %s is not within the violation path', $index));
         }
 
         return !$this->isIndex[$index];
@@ -184,10 +184,10 @@ class ViolationPath implements \IteratorAggregate, PropertyPathInterface
     /**
      * {@inheritdoc}
      */
-    public function isIndex(int $index)
+    public function isIndex($index)
     {
         if (!isset($this->isIndex[$index])) {
-            throw new OutOfBoundsException(sprintf('The index "%s" is not within the violation path.', $index));
+            throw new OutOfBoundsException(sprintf('The index %s is not within the violation path', $index));
         }
 
         return $this->isIndex[$index];
@@ -203,14 +203,16 @@ class ViolationPath implements \IteratorAggregate, PropertyPathInterface
      * In this example, "address" and "office" map to forms, while
      * "street does not.
      *
+     * @param int $index The element index
+     *
      * @return bool Whether the element maps to a form
      *
      * @throws OutOfBoundsException if the offset is invalid
      */
-    public function mapsForm(int $index)
+    public function mapsForm($index)
     {
         if (!isset($this->mapsForm[$index])) {
-            throw new OutOfBoundsException(sprintf('The index "%s" is not within the violation path.', $index));
+            throw new OutOfBoundsException(sprintf('The index %s is not within the violation path', $index));
         }
 
         return $this->mapsForm[$index];

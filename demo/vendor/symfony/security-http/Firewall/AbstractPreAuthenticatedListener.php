@@ -12,6 +12,7 @@
 namespace Symfony\Component\Security\Http\Firewall;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\LegacyEventDispatcherProxy;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Security\Core\Authentication\AuthenticationManagerInterface;
@@ -32,10 +33,12 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  *
- * @internal
+ * @internal since Symfony 4.3
  */
-abstract class AbstractPreAuthenticatedListener extends AbstractListener
+abstract class AbstractPreAuthenticatedListener implements ListenerInterface
 {
+    use LegacyListenerTrait;
+
     protected $logger;
     private $tokenStorage;
     private $authenticationManager;
@@ -49,34 +52,28 @@ abstract class AbstractPreAuthenticatedListener extends AbstractListener
         $this->authenticationManager = $authenticationManager;
         $this->providerKey = $providerKey;
         $this->logger = $logger;
-        $this->dispatcher = $dispatcher;
-    }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function supports(Request $request): ?bool
-    {
-        try {
-            $request->attributes->set('_pre_authenticated_data', $this->getPreAuthenticatedData($request));
-        } catch (BadCredentialsException $e) {
-            $this->clearToken($e);
-
-            return false;
+        if (null !== $dispatcher && class_exists(LegacyEventDispatcherProxy::class)) {
+            $this->dispatcher = LegacyEventDispatcherProxy::decorate($dispatcher);
+        } else {
+            $this->dispatcher = $dispatcher;
         }
-
-        return true;
     }
 
     /**
      * Handles pre-authentication.
      */
-    public function authenticate(RequestEvent $event)
+    public function __invoke(RequestEvent $event)
     {
         $request = $event->getRequest();
 
-        [$user, $credentials] = $request->attributes->get('_pre_authenticated_data');
-        $request->attributes->remove('_pre_authenticated_data');
+        try {
+            list($user, $credentials) = $this->getPreAuthenticatedData($request);
+        } catch (BadCredentialsException $e) {
+            $this->clearToken($e);
+
+            return;
+        }
 
         if (null !== $this->logger) {
             $this->logger->debug('Checking current security token.', ['token' => (string) $this->tokenStorage->getToken()]);

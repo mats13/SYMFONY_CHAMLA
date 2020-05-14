@@ -12,6 +12,8 @@
 namespace Symfony\Bundle\SecurityBundle\DependencyInjection;
 
 use Symfony\Bundle\SecurityBundle\DependencyInjection\Security\Factory\AbstractFactory;
+use Symfony\Bundle\SecurityBundle\DependencyInjection\Security\Factory\SimpleFormFactory;
+use Symfony\Bundle\SecurityBundle\DependencyInjection\Security\Factory\SimplePreAuthenticationFactory;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -196,6 +198,11 @@ class MainConfiguration implements ConfigurationInterface
             ->scalarNode('provider')->end()
             ->booleanNode('stateless')->defaultFalse()->end()
             ->scalarNode('context')->cannotBeEmpty()->end()
+            ->booleanNode('logout_on_user_change')
+                ->defaultTrue()
+                ->info('When true, it will trigger a logout for the user if something has changed. Note: No-Op option since 4.0. Will always be true.')
+                ->setDeprecated('The "%path%.%node%" configuration key has been deprecated in Symfony 4.1.')
+            ->end()
             ->arrayNode('logout')
                 ->treatTrueLike([])
                 ->canBeUnset()
@@ -216,13 +223,27 @@ class MainConfiguration implements ConfigurationInterface
                             ->ifTrue(function ($v) { return \is_array($v) && \is_int(key($v)); })
                             ->then(function ($v) { return array_map(function ($v) { return ['name' => $v]; }, $v); })
                         ->end()
+                        ->beforeNormalization()
+                            ->ifArray()->then(function ($v) {
+                                foreach ($v as $originalName => $cookieConfig) {
+                                    if (false !== strpos($originalName, '-')) {
+                                        $normalizedName = str_replace('-', '_', $originalName);
+                                        @trigger_error(sprintf('Normalization of cookie names is deprecated since Symfony 4.3. Starting from Symfony 5.0, the "%s" cookie configured in "logout.delete_cookies" will delete the "%s" cookie instead of the "%s" cookie.', $originalName, $originalName, $normalizedName), E_USER_DEPRECATED);
+
+                                        // normalize cookie names manually for BC reasons. Remove it in Symfony 5.0.
+                                        $v[$normalizedName] = $cookieConfig;
+                                        unset($v[$originalName]);
+                                    }
+                                }
+
+                                return $v;
+                            })
+                        ->end()
                         ->useAttributeAsKey('name')
                         ->prototype('array')
                             ->children()
                                 ->scalarNode('path')->defaultNull()->end()
                                 ->scalarNode('domain')->defaultNull()->end()
-                                ->scalarNode('secure')->defaultFalse()->end()
-                                ->scalarNode('samesite')->defaultNull()->end()
                             ->end()
                         ->end()
                     ->end()
@@ -234,12 +255,22 @@ class MainConfiguration implements ConfigurationInterface
                     ->end()
                 ->end()
             ->end()
+            ->arrayNode('anonymous')
+                ->canBeUnset()
+                ->children()
+                    ->scalarNode('secret')->defaultNull()->end()
+                ->end()
+            ->end()
             ->arrayNode('switch_user')
                 ->canBeUnset()
                 ->children()
                     ->scalarNode('provider')->end()
                     ->scalarNode('parameter')->defaultValue('_switch_user')->end()
                     ->scalarNode('role')->defaultValue('ROLE_ALLOWED_TO_SWITCH')->end()
+                    ->booleanNode('stateless')
+                        ->setDeprecated('The "%path%.%node%" configuration key has been deprecated in Symfony 4.1.')
+                        ->defaultValue(false)
+                    ->end()
                 ->end()
             ->end()
         ;
@@ -251,6 +282,10 @@ class MainConfiguration implements ConfigurationInterface
                 $factoryNode = $firewallNodeBuilder->arrayNode($name)
                     ->canBeUnset()
                 ;
+
+                if ($factory instanceof SimplePreAuthenticationFactory || $factory instanceof SimpleFormFactory) {
+                    $factoryNode->setDeprecated(sprintf('The "%s" security listener is deprecated Symfony 4.2, use Guard instead.', $name));
+                }
 
                 if ($factory instanceof AbstractFactory) {
                     $abstractFactoryKeys[] = $name;
@@ -371,10 +406,6 @@ class MainConfiguration implements ConfigurationInterface
                                     ->thenInvalid('You must provide a string value.')
                                 ->end()
                             ->end()
-                            ->arrayNode('migrate_from')
-                                ->prototype('scalar')->end()
-                                ->beforeNormalization()->castToArray()->end()
-                            ->end()
                             ->scalarNode('hash_algorithm')->info('Name of hashing algorithm for PBKDF2 (i.e. sha256, sha512, etc..) See hash_algos() for a list of supported algorithms.')->defaultValue('sha512')->end()
                             ->scalarNode('key_length')->defaultValue(40)->end()
                             ->booleanNode('ignore_case')->defaultFalse()->end()
@@ -387,6 +418,10 @@ class MainConfiguration implements ConfigurationInterface
                             ->end()
                             ->scalarNode('memory_cost')->defaultNull()->end()
                             ->scalarNode('time_cost')->defaultNull()->end()
+                            ->scalarNode('threads')
+                                ->defaultNull()
+                                ->setDeprecated('The "%path%.%node%" configuration key has no effect since Symfony 4.3 and will be removed in 5.0.')
+                            ->end()
                             ->scalarNode('id')->end()
                         ->end()
                     ->end()

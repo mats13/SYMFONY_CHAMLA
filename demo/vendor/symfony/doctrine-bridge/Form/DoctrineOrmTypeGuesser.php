@@ -12,7 +12,6 @@
 namespace Symfony\Bridge\Doctrine\Form;
 
 use Doctrine\DBAL\Types\Type;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException as LegacyMappingException;
 use Doctrine\Persistence\ManagerRegistry;
@@ -29,21 +28,15 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
 
     private $cache = [];
 
-    private static $useDeprecatedConstants;
-
     public function __construct(ManagerRegistry $registry)
     {
         $this->registry = $registry;
-
-        if (null === self::$useDeprecatedConstants) {
-            self::$useDeprecatedConstants = !class_exists(Types::class);
-        }
     }
 
     /**
      * {@inheritdoc}
      */
-    public function guessType(string $class, string $property)
+    public function guessType($class, $property)
     {
         if (!$ret = $this->getMetadata($class)) {
             return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\TextType', [], Guess::LOW_CONFIDENCE);
@@ -59,13 +52,13 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
         }
 
         switch ($metadata->getTypeOfField($property)) {
-            case self::$useDeprecatedConstants ? Type::TARRAY : Types::ARRAY:
-            case self::$useDeprecatedConstants ? Type::SIMPLE_ARRAY : Types::SIMPLE_ARRAY:
+            case Type::TARRAY:
+            case Type::SIMPLE_ARRAY:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\CollectionType', [], Guess::MEDIUM_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::BOOLEAN : Types::BOOLEAN:
+            case Type::BOOLEAN:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\CheckboxType', [], Guess::HIGH_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::DATETIME : Types::DATETIME_MUTABLE:
-            case self::$useDeprecatedConstants ? Type::DATETIMETZ : Types::DATETIMETZ_MUTABLE:
+            case Type::DATETIME:
+            case Type::DATETIMETZ:
             case 'vardatetime':
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\DateTimeType', [], Guess::HIGH_CONFIDENCE);
             case 'datetime_immutable':
@@ -73,25 +66,25 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\DateTimeType', ['input' => 'datetime_immutable'], Guess::HIGH_CONFIDENCE);
             case 'dateinterval':
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\DateIntervalType', [], Guess::HIGH_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::DATE : Types::DATE_MUTABLE:
+            case Type::DATE:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\DateType', [], Guess::HIGH_CONFIDENCE);
             case 'date_immutable':
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\DateType', ['input' => 'datetime_immutable'], Guess::HIGH_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::TIME : Types::TIME_MUTABLE:
+            case Type::TIME:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\TimeType', [], Guess::HIGH_CONFIDENCE);
             case 'time_immutable':
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\TimeType', ['input' => 'datetime_immutable'], Guess::HIGH_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::DECIMAL : Types::DECIMAL:
+            case Type::DECIMAL:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\NumberType', ['input' => 'string'], Guess::MEDIUM_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::FLOAT : Types::FLOAT:
+            case Type::FLOAT:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\NumberType', [], Guess::MEDIUM_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::INTEGER : Types::INTEGER:
-            case self::$useDeprecatedConstants ? Type::BIGINT : Types::BIGINT:
-            case self::$useDeprecatedConstants ? Type::SMALLINT : Types::SMALLINT:
+            case Type::INTEGER:
+            case Type::BIGINT:
+            case Type::SMALLINT:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\IntegerType', [], Guess::MEDIUM_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::STRING : Types::STRING:
+            case Type::STRING:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\TextType', [], Guess::MEDIUM_CONFIDENCE);
-            case self::$useDeprecatedConstants ? Type::TEXT : Types::TEXT:
+            case Type::TEXT:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\TextareaType', [], Guess::MEDIUM_CONFIDENCE);
             default:
                 return new TypeGuess('Symfony\Component\Form\Extension\Core\Type\TextType', [], Guess::LOW_CONFIDENCE);
@@ -101,7 +94,7 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
     /**
      * {@inheritdoc}
      */
-    public function guessRequired(string $class, string $property)
+    public function guessRequired($class, $property)
     {
         $classMetadatas = $this->getMetadata($class);
 
@@ -114,7 +107,7 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
 
         // Check whether the field exists and is nullable or not
         if (isset($classMetadata->fieldMappings[$property])) {
-            if (!$classMetadata->isNullable($property) && (self::$useDeprecatedConstants ? Type::BOOLEAN : Types::BOOLEAN) !== $classMetadata->getTypeOfField($property)) {
+            if (!$classMetadata->isNullable($property) && Type::BOOLEAN !== $classMetadata->getTypeOfField($property)) {
                 return new ValueGuess(true, Guess::HIGH_CONFIDENCE);
             }
 
@@ -141,7 +134,7 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
     /**
      * {@inheritdoc}
      */
-    public function guessMaxLength(string $class, string $property)
+    public function guessMaxLength($class, $property)
     {
         $ret = $this->getMetadata($class);
         if ($ret && isset($ret[0]->fieldMappings[$property]) && !$ret[0]->hasAssociation($property)) {
@@ -151,7 +144,7 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
                 return new ValueGuess($mapping['length'], Guess::HIGH_CONFIDENCE);
             }
 
-            if (\in_array($ret[0]->getTypeOfField($property), self::$useDeprecatedConstants ? [Type::DECIMAL, Type::FLOAT] : [Types::DECIMAL, Types::FLOAT])) {
+            if (\in_array($ret[0]->getTypeOfField($property), [Type::DECIMAL, Type::FLOAT])) {
                 return new ValueGuess(null, Guess::MEDIUM_CONFIDENCE);
             }
         }
@@ -162,11 +155,11 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
     /**
      * {@inheritdoc}
      */
-    public function guessPattern(string $class, string $property)
+    public function guessPattern($class, $property)
     {
         $ret = $this->getMetadata($class);
         if ($ret && isset($ret[0]->fieldMappings[$property]) && !$ret[0]->hasAssociation($property)) {
-            if (\in_array($ret[0]->getTypeOfField($property), self::$useDeprecatedConstants ? [Type::DECIMAL, Type::FLOAT] : [Types::DECIMAL, Types::FLOAT])) {
+            if (\in_array($ret[0]->getTypeOfField($property), [Type::DECIMAL, Type::FLOAT])) {
                 return new ValueGuess(null, Guess::MEDIUM_CONFIDENCE);
             }
         }
@@ -174,7 +167,7 @@ class DoctrineOrmTypeGuesser implements FormTypeGuesserInterface
         return null;
     }
 
-    protected function getMetadata(string $class)
+    protected function getMetadata($class)
     {
         // normalize class name
         $class = self::getRealClass(ltrim($class, '\\'));

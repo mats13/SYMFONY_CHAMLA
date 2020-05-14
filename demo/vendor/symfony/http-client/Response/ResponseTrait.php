@@ -21,10 +21,6 @@ use Symfony\Component\HttpClient\Exception\RedirectionException;
 use Symfony\Component\HttpClient\Exception\ServerException;
 use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpClient\Internal\ClientState;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 /**
  * Implements the common logic for response classes.
@@ -47,13 +43,12 @@ trait ResponseTrait
         'response_headers' => [],
         'http_code' => 0,
         'error' => null,
-        'canceled' => false,
     ];
 
     /** @var resource */
     private $handle;
     private $id;
-    private $timeout = 0;
+    private $timeout;
     private $inflate;
     private $shouldBuffer;
     private $content;
@@ -119,7 +114,7 @@ trait ResponseTrait
                 return '';
             }
 
-            throw new TransportException('Cannot get the content of the response twice: buffering is disabled.');
+            throw new TransportException('Cannot get the content of the response twice: the request was issued with option "buffer" set to false.');
         }
 
         foreach (self::stream([$this]) as $chunk) {
@@ -147,21 +142,21 @@ trait ResponseTrait
         $contentType = $this->headers['content-type'][0] ?? 'application/json';
 
         if (!preg_match('/\bjson\b/i', $contentType)) {
-            throw new JsonException(sprintf('Response content-type is "%s" while a JSON-compatible one was expected for "%s".', $contentType, $this->getInfo('url')));
+            throw new JsonException(sprintf('Response content-type is "%s" while a JSON-compatible one was expected.', $contentType));
         }
 
         try {
-            $content = json_decode($content, true, 512, JSON_BIGINT_AS_STRING | (\PHP_VERSION_ID >= 70300 ? JSON_THROW_ON_ERROR : 0));
+            $content = json_decode($content, true, 512, JSON_BIGINT_AS_STRING | (\PHP_VERSION_ID >= 70300 ? \JSON_THROW_ON_ERROR : 0));
         } catch (\JsonException $e) {
-            throw new JsonException(sprintf($e->getMessage().' for "%s".', $this->getInfo('url')), $e->getCode());
+            throw new JsonException($e->getMessage(), $e->getCode());
         }
 
         if (\PHP_VERSION_ID < 70300 && JSON_ERROR_NONE !== json_last_error()) {
-            throw new JsonException(sprintf(json_last_error_msg().' for "%s".', $this->getInfo('url')), json_last_error());
+            throw new JsonException(json_last_error_msg(), json_last_error());
         }
 
         if (!\is_array($content)) {
-            throw new JsonException(sprintf('JSON content was expected to decode to an array, "%s" returned for "%s".', \gettype($content), $this->getInfo('url')));
+            throw new JsonException(sprintf('JSON content was expected to decode to an array, %s returned.', \gettype($content)));
         }
 
         if (null !== $this->content) {
@@ -177,33 +172,8 @@ trait ResponseTrait
      */
     public function cancel(): void
     {
-        $this->info['canceled'] = true;
         $this->info['error'] = 'Response has been canceled.';
         $this->close();
-    }
-
-    /**
-     * Casts the response to a PHP stream resource.
-     *
-     * @return resource
-     *
-     * @throws TransportExceptionInterface   When a network error occurs
-     * @throws RedirectionExceptionInterface On a 3xx when $throw is true and the "max_redirects" option has been reached
-     * @throws ClientExceptionInterface      On a 4xx when $throw is true
-     * @throws ServerExceptionInterface      On a 5xx when $throw is true
-     */
-    public function toStream(bool $throw = true)
-    {
-        if ($throw) {
-            // Ensure headers arrived
-            $this->getHeaders($throw);
-        }
-
-        $stream = StreamWrapper::createResource($this);
-        stream_get_meta_data($stream)['wrapper_data']
-            ->bindHandles($this->handle, $this->content);
-
-        return $stream;
     }
 
     /**
@@ -294,8 +264,6 @@ trait ResponseTrait
      */
     private function doDestruct()
     {
-        $this->shouldBuffer = true;
-
         if ($this->initializer && null === $this->info['error']) {
             self::initialize($this);
             $this->checkStatusCode();
@@ -387,26 +355,7 @@ trait ResponseTrait
                             }
 
                             $response->inflate = \extension_loaded('zlib') && $response->inflate && 'gzip' === ($response->headers['content-encoding'][0] ?? null) ? inflate_init(ZLIB_ENCODING_GZIP) : null;
-
-                            if ($response->shouldBuffer instanceof \Closure) {
-                                try {
-                                    $response->shouldBuffer = ($response->shouldBuffer)($response->headers);
-
-                                    if (null !== $response->info['error']) {
-                                        throw new TransportException($response->info['error']);
-                                    }
-                                } catch (\Throwable $e) {
-                                    $response->close();
-                                    $multi->handlesActivity[$j] = [null, $e];
-                                }
-                            }
-
-                            if (true === $response->shouldBuffer) {
-                                $response->content = fopen('php://temp', 'w+');
-                            } elseif (\is_resource($response->shouldBuffer)) {
-                                $response->content = $response->shouldBuffer;
-                            }
-                            $response->shouldBuffer = null;
+                            $response->content = $response->shouldBuffer ? fopen('php://temp', 'w+') : null;
 
                             yield $response => $chunk;
 

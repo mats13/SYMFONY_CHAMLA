@@ -27,8 +27,9 @@ class PostAuthenticationGuardToken extends AbstractToken implements GuardTokenIn
     private $providerKey;
 
     /**
-     * @param string   $providerKey The provider (firewall) key
-     * @param string[] $roles       An array of roles
+     * @param UserInterface $user        The user!
+     * @param string        $providerKey The provider (firewall) key
+     * @param string[]      $roles       An array of roles
      *
      * @throws \InvalidArgumentException
      */

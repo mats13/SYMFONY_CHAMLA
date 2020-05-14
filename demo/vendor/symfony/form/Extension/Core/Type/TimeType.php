@@ -13,7 +13,6 @@ namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Exception\InvalidConfigurationException;
-use Symfony\Component\Form\Exception\LogicException;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeImmutableToDateTimeTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToArrayTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToStringTransformer;
@@ -46,10 +45,6 @@ class TimeType extends AbstractType
             throw new InvalidConfigurationException('You can not disable minutes if you have enabled seconds.');
         }
 
-        if (null !== $options['reference_date'] && $options['reference_date']->getTimezone()->getName() !== $options['model_timezone']) {
-            throw new InvalidConfigurationException(sprintf('The configured "model_timezone" (%s) must match the timezone of the "reference_date" (%s).', $options['model_timezone'], $options['reference_date']->getTimezone()->getName()));
-        }
-
         if ($options['with_minutes']) {
             $format .= ':i';
             $parts[] = 'minute';
@@ -61,32 +56,18 @@ class TimeType extends AbstractType
         }
 
         if ('single_text' === $options['widget']) {
-            $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $e) use ($options) {
-                $data = $e->getData();
-                if ($data && preg_match('/^(?P<hours>\d{2}):(?P<minutes>\d{2})(?::(?P<seconds>\d{2})(?:\.\d+)?)?$/', $data, $matches)) {
-                    if ($options['with_seconds']) {
-                        // handle seconds ignored by user's browser when with_seconds enabled
-                        // https://codereview.chromium.org/450533009/
-                        $e->setData(sprintf('%s:%s:%s', $matches['hours'], $matches['minutes'], isset($matches['seconds']) ? $matches['seconds'] : '00'));
-                    } else {
-                        $e->setData(sprintf('%s:%s', $matches['hours'], $matches['minutes']));
-                    }
-                }
-            });
+            $builder->addViewTransformer(new DateTimeToStringTransformer($options['model_timezone'], $options['view_timezone'], $format));
 
-            if (null !== $options['reference_date']) {
-                $format = 'Y-m-d '.$format;
-
-                $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) use ($options) {
-                    $data = $event->getData();
-
-                    if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $data)) {
-                        $event->setData($options['reference_date']->format('Y-m-d ').$data);
+            // handle seconds ignored by user's browser when with_seconds enabled
+            // https://codereview.chromium.org/450533009/
+            if ($options['with_seconds']) {
+                $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $e) {
+                    $data = $e->getData();
+                    if ($data && preg_match('/^\d{2}:\d{2}$/', $data)) {
+                        $e->setData($data.':00');
                     }
                 });
             }
-
-            $builder->addViewTransformer(new DateTimeToStringTransformer($options['model_timezone'], $options['view_timezone'], $format));
         } else {
             $hourOptions = $minuteOptions = $secondOptions = [
                 'error_bubbling' => true,
@@ -96,17 +77,7 @@ class TimeType extends AbstractType
             // so we need to handle the cascade setting here
             $emptyData = $builder->getEmptyData() ?: [];
 
-            if ($emptyData instanceof \Closure) {
-                $lazyEmptyData = static function ($option) use ($emptyData) {
-                    return static function (FormInterface $form) use ($emptyData, $option) {
-                        $emptyData = $emptyData($form->getParent());
-
-                        return isset($emptyData[$option]) ? $emptyData[$option] : '';
-                    };
-                };
-
-                $hourOptions['empty_data'] = $lazyEmptyData('hour');
-            } elseif (isset($emptyData['hour'])) {
+            if (isset($emptyData['hour'])) {
                 $hourOptions['empty_data'] = $emptyData['hour'];
             }
 
@@ -173,24 +144,20 @@ class TimeType extends AbstractType
             $builder->add('hour', self::$widgets[$options['widget']], $hourOptions);
 
             if ($options['with_minutes']) {
-                if ($emptyData instanceof \Closure) {
-                    $minuteOptions['empty_data'] = $lazyEmptyData('minute');
-                } elseif (isset($emptyData['minute'])) {
+                if (isset($emptyData['minute'])) {
                     $minuteOptions['empty_data'] = $emptyData['minute'];
                 }
                 $builder->add('minute', self::$widgets[$options['widget']], $minuteOptions);
             }
 
             if ($options['with_seconds']) {
-                if ($emptyData instanceof \Closure) {
-                    $secondOptions['empty_data'] = $lazyEmptyData('second');
-                } elseif (isset($emptyData['second'])) {
+                if (isset($emptyData['second'])) {
                     $secondOptions['empty_data'] = $emptyData['second'];
                 }
                 $builder->add('second', self::$widgets[$options['widget']], $secondOptions);
             }
 
-            $builder->addViewTransformer(new DateTimeToArrayTransformer($options['model_timezone'], $options['view_timezone'], $parts, 'text' === $options['widget'], $options['reference_date']));
+            $builder->addViewTransformer(new DateTimeToArrayTransformer($options['model_timezone'], $options['view_timezone'], $parts, 'text' === $options['widget']));
         }
 
         if ('datetime_immutable' === $options['input']) {
@@ -284,18 +251,6 @@ class TimeType extends AbstractType
             ];
         };
 
-        $modelTimezone = static function (Options $options, $value): ?string {
-            if (null !== $value) {
-                return $value;
-            }
-
-            if (null !== $options['reference_date']) {
-                return $options['reference_date']->getTimezone()->getName();
-            }
-
-            return null;
-        };
-
         $resolver->setDefaults([
             'hours' => range(0, 23),
             'minutes' => range(0, 59),
@@ -305,9 +260,8 @@ class TimeType extends AbstractType
             'input_format' => 'H:i:s',
             'with_minutes' => true,
             'with_seconds' => false,
-            'model_timezone' => $modelTimezone,
+            'model_timezone' => null,
             'view_timezone' => null,
-            'reference_date' => null,
             'placeholder' => $placeholderDefault,
             'html5' => true,
             // Don't modify \DateTime classes by reference, we treat
@@ -325,14 +279,6 @@ class TimeType extends AbstractType
             'compound' => $compound,
             'choice_translation_domain' => false,
         ]);
-
-        $resolver->setNormalizer('model_timezone', function (Options $options, $modelTimezone): ?string {
-            if (null !== $modelTimezone && $options['view_timezone'] !== $modelTimezone && null === $options['reference_date']) {
-                throw new LogicException(sprintf('Using different values for the "model_timezone" and "view_timezone" options without configuring a reference date is not supported.'));
-            }
-
-            return $modelTimezone;
-        });
 
         $resolver->setNormalizer('placeholder', $placeholderNormalizer);
         $resolver->setNormalizer('choice_translation_domain', $choiceTranslationDomainNormalizer);
@@ -354,9 +300,6 @@ class TimeType extends AbstractType
         $resolver->setAllowedTypes('minutes', 'array');
         $resolver->setAllowedTypes('seconds', 'array');
         $resolver->setAllowedTypes('input_format', 'string');
-        $resolver->setAllowedTypes('model_timezone', ['null', 'string']);
-        $resolver->setAllowedTypes('view_timezone', ['null', 'string']);
-        $resolver->setAllowedTypes('reference_date', ['null', \DateTimeInterface::class]);
     }
 
     /**

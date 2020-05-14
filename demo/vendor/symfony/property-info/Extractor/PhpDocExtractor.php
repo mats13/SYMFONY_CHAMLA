@@ -14,7 +14,6 @@ namespace Symfony\Component\PropertyInfo\Extractor;
 use phpDocumentor\Reflection\DocBlock;
 use phpDocumentor\Reflection\DocBlockFactory;
 use phpDocumentor\Reflection\DocBlockFactoryInterface;
-use phpDocumentor\Reflection\Types\Context;
 use phpDocumentor\Reflection\Types\ContextFactory;
 use Symfony\Component\PropertyInfo\PropertyDescriptionExtractorInterface;
 use Symfony\Component\PropertyInfo\PropertyTypeExtractorInterface;
@@ -39,11 +38,6 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
      */
     private $docBlocks = [];
 
-    /**
-     * @var Context[]
-     */
-    private $contexts = [];
-
     private $docBlockFactory;
     private $contextFactory;
     private $phpDocTypeHelper;
@@ -52,9 +46,10 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
     private $arrayMutatorPrefixes;
 
     /**
-     * @param string[]|null $mutatorPrefixes
-     * @param string[]|null $accessorPrefixes
-     * @param string[]|null $arrayMutatorPrefixes
+     * @param DocBlockFactoryInterface $docBlockFactory
+     * @param string[]|null            $mutatorPrefixes
+     * @param string[]|null            $accessorPrefixes
+     * @param string[]|null            $arrayMutatorPrefixes
      */
     public function __construct(DocBlockFactoryInterface $docBlockFactory = null, array $mutatorPrefixes = null, array $accessorPrefixes = null, array $arrayMutatorPrefixes = null)
     {
@@ -73,7 +68,7 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
     /**
      * {@inheritdoc}
      */
-    public function getShortDescription(string $class, string $property, array $context = []): ?string
+    public function getShortDescription($class, $property, array $context = [])
     {
         /** @var $docBlock DocBlock */
         list($docBlock) = $this->getDocBlock($class, $property);
@@ -101,7 +96,7 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
     /**
      * {@inheritdoc}
      */
-    public function getLongDescription(string $class, string $property, array $context = []): ?string
+    public function getLongDescription($class, $property, array $context = [])
     {
         /** @var $docBlock DocBlock */
         list($docBlock) = $this->getDocBlock($class, $property);
@@ -117,7 +112,7 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
     /**
      * {@inheritdoc}
      */
-    public function getTypes(string $class, string $property, array $context = []): ?array
+    public function getTypes($class, $property, array $context = [])
     {
         /** @var $docBlock DocBlock */
         list($docBlock, $source, $prefix) = $this->getDocBlock($class, $property);
@@ -198,7 +193,7 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
         }
 
         try {
-            return $this->docBlockFactory->create($reflectionProperty, $this->createFromReflector($reflectionProperty->getDeclaringClass()));
+            return $this->docBlockFactory->create($reflectionProperty, $this->contextFactory->createFromReflector($reflectionProperty->getDeclaringClass()));
         } catch (\InvalidArgumentException $e) {
             return null;
         } catch (\RuntimeException $e) {
@@ -236,27 +231,11 @@ class PhpDocExtractor implements PropertyDescriptionExtractorInterface, Property
         }
 
         try {
-            return [$this->docBlockFactory->create($reflectionMethod, $this->createFromReflector($reflectionMethod->getDeclaringClass())), $prefix];
+            return [$this->docBlockFactory->create($reflectionMethod, $this->contextFactory->createFromReflector($reflectionMethod)), $prefix];
         } catch (\InvalidArgumentException $e) {
             return null;
         } catch (\RuntimeException $e) {
             return null;
         }
-    }
-
-    /**
-     * Prevents a lot of redundant calls to ContextFactory::createForNamespace().
-     */
-    private function createFromReflector(\ReflectionClass $reflector): Context
-    {
-        $cacheKey = $reflector->getNamespaceName().':'.$reflector->getFileName();
-
-        if (isset($this->contexts[$cacheKey])) {
-            return $this->contexts[$cacheKey];
-        }
-
-        $this->contexts[$cacheKey] = $this->contextFactory->createFromReflector($reflector);
-
-        return $this->contexts[$cacheKey];
     }
 }

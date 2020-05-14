@@ -11,7 +11,6 @@
 
 namespace Sensio\Bundle\FrameworkExtraBundle\EventListener;
 
-use Psr\Container\ContainerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use Sensio\Bundle\FrameworkExtraBundle\Templating\TemplateGuesser;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -20,7 +19,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Event\KernelEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Contracts\Service\ServiceSubscriberInterface;
 use Twig\Environment;
 
 /**
@@ -30,21 +28,15 @@ use Twig\Environment;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class TemplateListener implements EventSubscriberInterface, ServiceSubscriberInterface
+class TemplateListener implements EventSubscriberInterface
 {
     private $templateGuesser;
     private $twig;
-    private $container;
 
     public function __construct(TemplateGuesser $templateGuesser, Environment $twig = null)
     {
         $this->templateGuesser = $templateGuesser;
         $this->twig = $twig;
-    }
-
-    public function setContainer(ContainerInterface $container): void
-    {
-        $this->container = $container;
     }
 
     /**
@@ -87,11 +79,7 @@ class TemplateListener implements EventSubscriberInterface, ServiceSubscriberInt
         }
 
         if (null === $this->twig) {
-            if (!$this->container || !$this->container->has('twig')) {
-                throw new \LogicException('You can not use the "@Template" annotation if the Twig Bundle is not available.');
-            }
-
-            $this->twig = $this->container->get('twig');
+            throw new \LogicException('You can not use the "@Template" annotation if the Twig Bundle is not available.');
         }
 
         $parameters = $event->getControllerResult();
@@ -128,11 +116,6 @@ class TemplateListener implements EventSubscriberInterface, ServiceSubscriberInt
             KernelEvents::CONTROLLER => ['onKernelController', -128],
             KernelEvents::VIEW => 'onKernelView',
         ];
-    }
-
-    public static function getSubscribedServices(): array
-    {
-        return ['twig' => '?'.Environment::class];
     }
 
     private function resolveDefaultParameters(Request $request, Template $template, $controller, $action)

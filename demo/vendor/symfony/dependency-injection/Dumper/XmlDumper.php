@@ -91,7 +91,13 @@ class XmlDumper extends Dumper
         }
     }
 
-    private function addService(Definition $definition, ?string $id, \DOMElement $parent)
+    /**
+     * Adds a service.
+     *
+     * @param Definition $definition
+     * @param string     $id
+     */
+    private function addService($definition, $id, \DOMElement $parent)
     {
         $service = $this->document->createElement('service');
         if (null !== $id) {
@@ -116,15 +122,9 @@ class XmlDumper extends Dumper
         if ($definition->isLazy()) {
             $service->setAttribute('lazy', 'true');
         }
-        if (null !== $decoratedService = $definition->getDecoratedService()) {
-            list($decorated, $renamedId, $priority) = $decoratedService;
+        if (null !== $decorated = $definition->getDecoratedService()) {
+            list($decorated, $renamedId, $priority) = $decorated;
             $service->setAttribute('decorates', $decorated);
-
-            $decorationOnInvalid = $decoratedService[3] ?? ContainerInterface::EXCEPTION_ON_INVALID_REFERENCE;
-            if (\in_array($decorationOnInvalid, [ContainerInterface::IGNORE_ON_INVALID_REFERENCE, ContainerInterface::NULL_ON_INVALID_REFERENCE], true)) {
-                $invalidBehavior = ContainerInterface::NULL_ON_INVALID_REFERENCE === $decorationOnInvalid ? 'null' : 'ignore';
-                $service->setAttribute('decoration-on-invalid', $invalidBehavior);
-            }
             if (null !== $renamedId) {
                 $service->setAttribute('decoration-inner-name', $renamedId);
             }
@@ -214,7 +214,12 @@ class XmlDumper extends Dumper
         $parent->appendChild($service);
     }
 
-    private function addServiceAlias(string $alias, Alias $id, \DOMElement $parent)
+    /**
+     * Adds a service alias.
+     *
+     * @param string $alias
+     */
+    private function addServiceAlias($alias, Alias $id, \DOMElement $parent)
     {
         $service = $this->document->createElement('service');
         $service->setAttribute('id', $alias);
@@ -255,7 +260,13 @@ class XmlDumper extends Dumper
         $parent->appendChild($services);
     }
 
-    private function convertParameters(array $parameters, string $type, \DOMElement $parent, string $keyAttribute = 'key')
+    /**
+     * Converts parameters.
+     *
+     * @param string $type
+     * @param string $keyAttribute
+     */
+    private function convertParameters(array $parameters, $type, \DOMElement $parent, $keyAttribute = 'key')
     {
         $withKeys = array_keys($parameters) !== range(0, \count($parameters) - 1);
         foreach ($parameters as $key => $value) {
@@ -271,7 +282,7 @@ class XmlDumper extends Dumper
                 $element->setAttribute('type', 'collection');
                 $this->convertParameters($value, $type, $element, 'key');
             } elseif ($value instanceof TaggedIteratorArgument || ($value instanceof ServiceLocatorArgument && $tag = $value->getTaggedIteratorArgument())) {
-                $element->setAttribute('type', $value instanceof TaggedIteratorArgument ? 'tagged_iterator' : 'tagged_locator');
+                $element->setAttribute('type', $value instanceof TaggedIteratorArgument ? 'tagged' : 'tagged_locator');
                 $element->setAttribute('tag', $tag->getTag());
 
                 if (null !== $tag->getIndexAttribute()) {
@@ -279,9 +290,6 @@ class XmlDumper extends Dumper
 
                     if (null !== $tag->getDefaultIndexMethod()) {
                         $element->setAttribute('default-index-method', $tag->getDefaultIndexMethod());
-                    }
-                    if (null !== $tag->getDefaultPriorityMethod()) {
-                        $element->setAttribute('default-priority-method', $tag->getDefaultPriorityMethod());
                     }
                 }
             } elseif ($value instanceof IteratorArgument) {
@@ -330,8 +338,10 @@ class XmlDumper extends Dumper
 
     /**
      * Escapes arguments.
+     *
+     * @return array
      */
-    private function escape(array $arguments): array
+    private function escape(array $arguments)
     {
         $args = [];
         foreach ($arguments as $k => $v) {
@@ -352,9 +362,11 @@ class XmlDumper extends Dumper
      *
      * @param mixed $value Value to convert
      *
+     * @return string
+     *
      * @throws RuntimeException When trying to dump object or resource
      */
-    public static function phpToXml($value): string
+    public static function phpToXml($value)
     {
         switch (true) {
             case null === $value:

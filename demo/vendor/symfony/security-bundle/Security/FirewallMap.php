@@ -58,7 +58,10 @@ class FirewallMap implements FirewallMapInterface
         return $context->getConfig();
     }
 
-    private function getFirewallContext(Request $request): ?FirewallContext
+    /**
+     * @return FirewallContext|null
+     */
+    private function getFirewallContext(Request $request)
     {
         if ($request->attributes->has('_firewall_context')) {
             $storedContextId = $request->attributes->get('_firewall_context');

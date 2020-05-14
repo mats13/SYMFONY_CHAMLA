@@ -65,14 +65,12 @@
         {%- endif -%}
         {%- if preferred_choices|length > 0 -%}
             {% set options = preferred_choices %}
-            {% set render_preferred_choices = true %}
             {{- block('choice_widget_options') -}}
             {%- if choices|length > 0 and separator is not none -%}
                 <option disabled="disabled">{{ separator }}</option>
             {%- endif -%}
         {%- endif -%}
         {%- set options = choices -%}
-        {%- set render_preferred_choices = false -%}
         {{- block('choice_widget_options') -}}
     </select>
 {%- endblock choice_widget_collapsed -%}
@@ -85,7 +83,7 @@
                 {{- block('choice_widget_options') -}}
             </optgroup>
         {%- else -%}
-            <option value="{{ choice.value }}"{% if choice.attr %}{% with { attr: choice.attr } %}{{ block('attributes') }}{% endwith %}{% endif %}{% if not render_preferred_choices|default(false) and choice is selectedchoice(value) %} selected="selected"{% endif %}>{{ choice_translation_domain is same as(false) ? choice.label : choice.label|trans({}, choice_translation_domain) }}</option>
+            <option value="{{ choice.value }}"{% if choice.attr %}{% with { attr: choice.attr } %}{{ block('attributes') }}{% endwith %}{% endif %}{% if choice is selectedchoice(value) %} selected="selected"{% endif %}>{{ choice_translation_domain is same as(false) ? choice.label : choice.label|trans({}, choice_translation_domain) }}</option>
         {%- endif -%}
     {% endfor %}
 {%- endblock choice_widget_options -%}
@@ -254,17 +252,6 @@
     {%- set type = type|default('color') -%}
     {{ block('form_widget_simple') }}
 {%- endblock color_widget -%}
-
-{%- block week_widget -%}
-    {%- if widget == 'single_text' -%}
-        {{ block('form_widget_simple') }}
-    {%- else -%}
-        {%- set vars = widget == 'text' ? { 'attr': { 'size': 1 }} : {} -%}
-        <div {{ block('widget_container_attributes') }}>
-            {{ form_widget(form.year, vars) }}-{{ form_widget(form.week, vars) }}
-        </div>
-    {%- endif -%}
-{%- endblock week_widget -%}
 
 {# Labels #}
 

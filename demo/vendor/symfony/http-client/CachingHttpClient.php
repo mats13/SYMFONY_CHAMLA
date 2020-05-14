@@ -55,8 +55,6 @@ class CachingHttpClient implements HttpClientInterface
         unset($defaultOptions['allow_revalidate']);
         unset($defaultOptions['stale_while_revalidate']);
         unset($defaultOptions['stale_if_error']);
-        unset($defaultOptions['trace_level']);
-        unset($defaultOptions['trace_header']);
 
         if ($defaultOptions) {
             [, $this->defaultOptions] = self::prepareRequest(null, null, $defaultOptions, $this->defaultOptions);
@@ -70,8 +68,9 @@ class CachingHttpClient implements HttpClientInterface
     {
         [$url, $options] = $this->prepareRequest($method, $url, $options, $this->defaultOptions, true);
         $url = implode('', $url);
+        $options['extra']['no_cache'] = $options['extra']['no_cache'] ?? !$options['buffer'];
 
-        if (!empty($options['body']) || !empty($options['extra']['no_cache']) || !\in_array($method, ['GET', 'HEAD', 'OPTIONS'])) {
+        if (!empty($options['body']) || $options['extra']['no_cache'] || !\in_array($method, ['GET', 'HEAD', 'OPTIONS'])) {
             return $this->client->request($method, $url, $options);
         }
 
@@ -114,7 +113,7 @@ class CachingHttpClient implements HttpClientInterface
         if ($responses instanceof ResponseInterface) {
             $responses = [$responses];
         } elseif (!is_iterable($responses)) {
-            throw new \TypeError(sprintf('"%s()" expects parameter 1 to be an iterable of ResponseInterface objects, "%s" given.', __METHOD__, \is_object($responses) ? \get_class($responses) : \gettype($responses)));
+            throw new \TypeError(sprintf('%s() expects parameter 1 to be an iterable of ResponseInterface objects, %s given.', __METHOD__, \is_object($responses) ? \get_class($responses) : \gettype($responses)));
         }
 
         $mockResponses = [];

@@ -60,7 +60,7 @@ class ClassMetadata implements ClassMetadataInterface
     /**
      * {@inheritdoc}
      */
-    public function getName(): string
+    public function getName()
     {
         return $this->name;
     }
@@ -76,7 +76,7 @@ class ClassMetadata implements ClassMetadataInterface
     /**
      * {@inheritdoc}
      */
-    public function getAttributesMetadata(): array
+    public function getAttributesMetadata()
     {
         return $this->attributesMetadata;
     }
@@ -98,7 +98,7 @@ class ClassMetadata implements ClassMetadataInterface
     /**
      * {@inheritdoc}
      */
-    public function getReflectionClass(): \ReflectionClass
+    public function getReflectionClass()
     {
         if (!$this->reflClass) {
             $this->reflClass = new \ReflectionClass($this->getName());
@@ -110,7 +110,7 @@ class ClassMetadata implements ClassMetadataInterface
     /**
      * {@inheritdoc}
      */
-    public function getClassDiscriminatorMapping(): ?ClassDiscriminatorMapping
+    public function getClassDiscriminatorMapping()
     {
         return $this->classDiscriminatorMapping;
     }

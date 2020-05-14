@@ -12,7 +12,7 @@
 namespace Symfony\Component\Security\Http\Firewall;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\EventDispatcher\LegacyEventDispatcherProxy;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Security\Core\Authentication\AuthenticationManagerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -29,10 +29,12 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  *
  * @author Johannes M. Schmitt <schmittjoh@gmail.com>
  *
- * @final
+ * @final since Symfony 4.3
  */
-class RememberMeListener extends AbstractListener
+class RememberMeListener implements ListenerInterface
 {
+    use LegacyListenerTrait;
+
     private $tokenStorage;
     private $rememberMeServices;
     private $authenticationManager;
@@ -47,23 +49,21 @@ class RememberMeListener extends AbstractListener
         $this->rememberMeServices = $rememberMeServices;
         $this->authenticationManager = $authenticationManager;
         $this->logger = $logger;
-        $this->dispatcher = $dispatcher;
+
+        if (null !== $dispatcher && class_exists(LegacyEventDispatcherProxy::class)) {
+            $this->dispatcher = LegacyEventDispatcherProxy::decorate($dispatcher);
+        } else {
+            $this->dispatcher = $dispatcher;
+        }
+
         $this->catchExceptions = $catchExceptions;
         $this->sessionStrategy = null === $sessionStrategy ? new SessionAuthenticationStrategy(SessionAuthenticationStrategy::MIGRATE) : $sessionStrategy;
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function supports(Request $request): ?bool
-    {
-        return null; // always run authenticate() lazily with lazy firewalls
-    }
-
-    /**
      * Handles remember-me cookie based authentication.
      */
-    public function authenticate(RequestEvent $event)
+    public function __invoke(RequestEvent $event)
     {
         if (null !== $this->tokenStorage->getToken()) {
             return;

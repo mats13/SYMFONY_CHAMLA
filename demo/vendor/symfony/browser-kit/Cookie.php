@@ -83,8 +83,6 @@ class Cookie
 
     /**
      * Returns the HTTP representation of the Cookie.
-     *
-     * @return string
      */
     public function __toString()
     {
@@ -121,11 +119,14 @@ class Cookie
     /**
      * Creates a Cookie instance from a Set-Cookie header value.
      *
+     * @param string      $cookie A Set-Cookie header value
+     * @param string|null $url    The base URL
+     *
      * @return static
      *
      * @throws \InvalidArgumentException
      */
-    public static function fromString(string $cookie, string $url = null)
+    public static function fromString($cookie, $url = null)
     {
         $parts = explode(';', $cookie);
 
@@ -198,7 +199,12 @@ class Cookie
         );
     }
 
-    private static function parseDate(string $dateValue): ?string
+    /**
+     * @param string $dateValue
+     *
+     * @return string|null
+     */
+    private static function parseDate($dateValue)
     {
         // trim single quotes around date if present
         if (($length = \strlen($dateValue)) > 1 && "'" === $dateValue[0] && "'" === $dateValue[$length - 1]) {

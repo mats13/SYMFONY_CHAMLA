@@ -27,14 +27,11 @@ final class NativePasswordEncoder implements PasswordEncoderInterface, SelfSalti
     private $algo;
     private $options;
 
-    /**
-     * @param string|null $algo An algorithm supported by password_hash() or null to use the stronger available algorithm
-     */
-    public function __construct(int $opsLimit = null, int $memLimit = null, int $cost = null, string $algo = null)
+    public function __construct(int $opsLimit = null, int $memLimit = null, int $cost = null)
     {
         $cost = $cost ?? 13;
-        $opsLimit = $opsLimit ?? max(4, \defined('SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE') ? SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE : 4);
-        $memLimit = $memLimit ?? max(64 * 1024 * 1024, \defined('SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE') ? SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE : 64 * 1024 * 1024);
+        $opsLimit = $opsLimit ?? max(4, \defined('SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE') ? \SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE : 4);
+        $memLimit = $memLimit ?? max(64 * 1024 * 1024, \defined('SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE') ? \SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE : 64 * 1024 * 1024);
 
         if (3 > $opsLimit) {
             throw new \InvalidArgumentException('$opsLimit must be 3 or greater.');
@@ -48,7 +45,7 @@ final class NativePasswordEncoder implements PasswordEncoderInterface, SelfSalti
             throw new \InvalidArgumentException('$cost must be in the range of 4-31.');
         }
 
-        $this->algo = (string) ($algo ?? (\defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : (\defined('PASSWORD_ARGON2I') ? PASSWORD_ARGON2I : PASSWORD_BCRYPT)));
+        $this->algo = \defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : (\defined('PASSWORD_ARGON2I') ? PASSWORD_ARGON2I : PASSWORD_BCRYPT);
         $this->options = [
             'cost' => $cost,
             'time_cost' => $opsLimit,
@@ -60,9 +57,9 @@ final class NativePasswordEncoder implements PasswordEncoderInterface, SelfSalti
     /**
      * {@inheritdoc}
      */
-    public function encodePassword(string $raw, ?string $salt): string
+    public function encodePassword($raw, $salt)
     {
-        if (\strlen($raw) > self::MAX_PASSWORD_LENGTH || ((string) PASSWORD_BCRYPT === $this->algo && 72 < \strlen($raw))) {
+        if (\strlen($raw) > self::MAX_PASSWORD_LENGTH || (PASSWORD_BCRYPT === $this->algo && 72 < \strlen($raw))) {
             throw new BadCredentialsException('Invalid password.');
         }
 
@@ -74,22 +71,18 @@ final class NativePasswordEncoder implements PasswordEncoderInterface, SelfSalti
     /**
      * {@inheritdoc}
      */
-    public function isPasswordValid(string $encoded, string $raw, ?string $salt): bool
+    public function isPasswordValid($encoded, $raw, $salt)
     {
-        if ('' === $raw) {
-            return false;
-        }
-
         if (\strlen($raw) > self::MAX_PASSWORD_LENGTH) {
             return false;
         }
 
-        if (0 !== strpos($encoded, '$argon')) {
+        if (0 === strpos($encoded, '$2')) {
             // BCrypt encodes only the first 72 chars
-            return (72 >= \strlen($raw) || 0 !== strpos($encoded, '$2')) && password_verify($raw, $encoded);
+            return 72 >= \strlen($raw) && password_verify($raw, $encoded);
         }
 
-        if (\extension_loaded('sodium') && version_compare(SODIUM_LIBRARY_VERSION, '1.0.14', '>=')) {
+        if (\extension_loaded('sodium') && version_compare(\SODIUM_LIBRARY_VERSION, '1.0.14', '>=')) {
             return sodium_crypto_pwhash_str_verify($encoded, $raw);
         }
 
@@ -98,13 +91,5 @@ final class NativePasswordEncoder implements PasswordEncoderInterface, SelfSalti
         }
 
         return password_verify($raw, $encoded);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function needsRehash(string $encoded): bool
-    {
-        return password_needs_rehash($encoded, $this->algo, $this->options);
     }
 }

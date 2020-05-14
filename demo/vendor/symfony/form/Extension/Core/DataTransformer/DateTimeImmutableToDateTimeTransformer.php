@@ -26,9 +26,11 @@ final class DateTimeImmutableToDateTimeTransformer implements DataTransformerInt
      *
      * @param \DateTimeImmutable|null $value A DateTimeImmutable object
      *
+     * @return \DateTime|null A \DateTime object
+     *
      * @throws TransformationFailedException If the given value is not a \DateTimeImmutable
      */
-    public function transform($value): ?\DateTime
+    public function transform($value)
     {
         if (null === $value) {
             return null;
@@ -50,9 +52,11 @@ final class DateTimeImmutableToDateTimeTransformer implements DataTransformerInt
      *
      * @param \DateTime|null $value A DateTime object
      *
+     * @return \DateTimeImmutable|null A DateTimeImmutable object
+     *
      * @throws TransformationFailedException If the given value is not a \DateTime
      */
-    public function reverseTransform($value): ?\DateTimeImmutable
+    public function reverseTransform($value)
     {
         if (null === $value) {
             return null;

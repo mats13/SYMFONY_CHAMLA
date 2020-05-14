@@ -13,7 +13,7 @@ namespace Symfony\Bridge\Monolog\Processor;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -21,8 +21,6 @@ use Symfony\Contracts\Service\ResetInterface;
  * Adds the current route information to the log entry.
  *
  * @author Piotr Stankowski <git@trakos.pl>
- *
- * @final
  */
 class RouteProcessor implements EventSubscriberInterface, ResetInterface
 {
@@ -35,7 +33,7 @@ class RouteProcessor implements EventSubscriberInterface, ResetInterface
         $this->reset();
     }
 
-    public function __invoke(array $records): array
+    public function __invoke(array $records)
     {
         if ($this->routeData && !isset($records['extra']['requests'])) {
             $records['extra']['requests'] = array_values($this->routeData);
@@ -49,7 +47,7 @@ class RouteProcessor implements EventSubscriberInterface, ResetInterface
         $this->routeData = [];
     }
 
-    public function addRouteData(RequestEvent $event)
+    public function addRouteData(GetResponseEvent $event)
     {
         if ($event->isMasterRequest()) {
             $this->reset();
@@ -78,7 +76,7 @@ class RouteProcessor implements EventSubscriberInterface, ResetInterface
         unset($this->routeData[$requestId]);
     }
 
-    public static function getSubscribedEvents(): array
+    public static function getSubscribedEvents()
     {
         return [
             KernelEvents::REQUEST => ['addRouteData', 1],

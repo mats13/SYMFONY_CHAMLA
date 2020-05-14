@@ -22,13 +22,15 @@ interface FormConfigBuilderInterface extends FormConfigInterface
     /**
      * Adds an event listener to an event on this form.
      *
-     * @param int $priority The priority of the listener. Listeners
-     *                      with a higher priority are called before
-     *                      listeners with a lower priority.
+     * @param string   $eventName The name of the event to listen to
+     * @param callable $listener  The listener to execute
+     * @param int      $priority  The priority of the listener. Listeners
+     *                            with a higher priority are called before
+     *                            listeners with a lower priority.
      *
      * @return $this The configuration object
      */
-    public function addEventListener(string $eventName, callable $listener, int $priority = 0);
+    public function addEventListener($eventName, $listener, $priority = 0);
 
     /**
      * Adds an event subscriber for events on this form.
@@ -49,7 +51,7 @@ interface FormConfigBuilderInterface extends FormConfigInterface
      *
      * @return $this The configuration object
      */
-    public function addViewTransformer(DataTransformerInterface $viewTransformer, bool $forcePrepend = false);
+    public function addViewTransformer(DataTransformerInterface $viewTransformer, $forcePrepend = false);
 
     /**
      * Clears the view transformers.
@@ -70,7 +72,7 @@ interface FormConfigBuilderInterface extends FormConfigInterface
      *
      * @return $this The configuration object
      */
-    public function addModelTransformer(DataTransformerInterface $modelTransformer, bool $forceAppend = false);
+    public function addModelTransformer(DataTransformerInterface $modelTransformer, $forceAppend = false);
 
     /**
      * Clears the normalization transformers.
@@ -82,11 +84,12 @@ interface FormConfigBuilderInterface extends FormConfigInterface
     /**
      * Sets the value for an attribute.
      *
-     * @param mixed $value The value of the attribute
+     * @param string $name  The name of the attribute
+     * @param mixed  $value The value of the attribute
      *
      * @return $this The configuration object
      */
-    public function setAttribute(string $name, $value);
+    public function setAttribute($name, $value);
 
     /**
      * Sets the attributes.
@@ -105,9 +108,11 @@ interface FormConfigBuilderInterface extends FormConfigInterface
     /**
      * Sets whether the form is disabled.
      *
+     * @param bool $disabled Whether the form is disabled
+     *
      * @return $this The configuration object
      */
-    public function setDisabled(bool $disabled);
+    public function setDisabled($disabled);
 
     /**
      * Sets the data used for the client data when no value is submitted.
@@ -121,16 +126,20 @@ interface FormConfigBuilderInterface extends FormConfigInterface
     /**
      * Sets whether errors bubble up to the parent.
      *
+     * @param bool $errorBubbling
+     *
      * @return $this The configuration object
      */
-    public function setErrorBubbling(bool $errorBubbling);
+    public function setErrorBubbling($errorBubbling);
 
     /**
      * Sets whether this field is required to be filled out when submitted.
      *
+     * @param bool $required
+     *
      * @return $this The configuration object
      */
-    public function setRequired(bool $required);
+    public function setRequired($required);
 
     /**
      * Sets the property path that the form should be mapped to.
@@ -146,32 +155,40 @@ interface FormConfigBuilderInterface extends FormConfigInterface
      * Sets whether the form should be mapped to an element of its
      * parent's data.
      *
+     * @param bool $mapped Whether the form should be mapped
+     *
      * @return $this The configuration object
      */
-    public function setMapped(bool $mapped);
+    public function setMapped($mapped);
 
     /**
      * Sets whether the form's data should be modified by reference.
      *
+     * @param bool $byReference Whether the data should be modified by reference
+     *
      * @return $this The configuration object
      */
-    public function setByReference(bool $byReference);
+    public function setByReference($byReference);
 
     /**
      * Sets whether the form should read and write the data of its parent.
      *
+     * @param bool $inheritData Whether the form should inherit its parent's data
+     *
      * @return $this The configuration object
      */
-    public function setInheritData(bool $inheritData);
+    public function setInheritData($inheritData);
 
     /**
      * Sets whether the form should be compound.
+     *
+     * @param bool $compound Whether the form should be compound
      *
      * @return $this The configuration object
      *
      * @see FormConfigInterface::getCompound()
      */
-    public function setCompound(bool $compound);
+    public function setCompound($compound);
 
     /**
      * Sets the resolved type.
@@ -199,9 +216,11 @@ interface FormConfigBuilderInterface extends FormConfigInterface
      * It means data passed to a factory method or mapped from the
      * parent will be ignored.
      *
+     * @param bool $locked Whether to lock the default configured data
+     *
      * @return $this The configuration object
      */
-    public function setDataLocked(bool $locked);
+    public function setDataLocked($locked);
 
     /**
      * Sets the form factory used for creating new forms.
@@ -211,16 +230,20 @@ interface FormConfigBuilderInterface extends FormConfigInterface
     /**
      * Sets the target URL of the form.
      *
+     * @param string $action The target URL of the form
+     *
      * @return $this The configuration object
      */
-    public function setAction(string $action);
+    public function setAction($action);
 
     /**
      * Sets the HTTP method used by the form.
      *
+     * @param string $method The HTTP method of the form
+     *
      * @return $this The configuration object
      */
-    public function setMethod(string $method);
+    public function setMethod($method);
 
     /**
      * Sets the request handler used by the form.
@@ -241,7 +264,7 @@ interface FormConfigBuilderInterface extends FormConfigInterface
      *
      * @return $this The configuration object
      */
-    public function setAutoInitialize(bool $initialize);
+    public function setAutoInitialize($initialize);
 
     /**
      * Builds and returns the form configuration.

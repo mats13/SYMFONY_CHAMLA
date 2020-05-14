@@ -47,7 +47,7 @@ class FormBuilder extends FormConfigBuilder implements \IteratorAggregate, FormB
     /**
      * {@inheritdoc}
      */
-    public function add($child, string $type = null, array $options = [])
+    public function add($child, $type = null, array $options = [])
     {
         if ($this->locked) {
             throw new BadMethodCallException('FormBuilder methods cannot be accessed anymore once the builder is turned into a FormConfigInterface instance.');
@@ -66,8 +66,8 @@ class FormBuilder extends FormConfigBuilder implements \IteratorAggregate, FormB
             throw new UnexpectedTypeException($child, 'string or Symfony\Component\Form\FormBuilderInterface');
         }
 
-        if (null !== $type && !\is_string($type)) {
-            throw new UnexpectedTypeException($type, 'string or null');
+        if (null !== $type && !\is_string($type) && !$type instanceof FormTypeInterface) {
+            throw new UnexpectedTypeException($type, 'string or Symfony\Component\Form\FormTypeInterface');
         }
 
         // Add to "children" to maintain order
@@ -80,7 +80,7 @@ class FormBuilder extends FormConfigBuilder implements \IteratorAggregate, FormB
     /**
      * {@inheritdoc}
      */
-    public function create($name, string $type = null, array $options = [])
+    public function create($name, $type = null, array $options = [])
     {
         if ($this->locked) {
             throw new BadMethodCallException('FormBuilder methods cannot be accessed anymore once the builder is turned into a FormConfigInterface instance.');
@@ -158,7 +158,7 @@ class FormBuilder extends FormConfigBuilder implements \IteratorAggregate, FormB
     }
 
     /**
-     * @return int
+     * {@inheritdoc}
      */
     public function count()
     {

@@ -21,8 +21,6 @@ use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
 /**
  * @author Aaron Scherer <aequasi@gmail.com>
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
- *
- * @final
  */
 class CacheDataCollector extends DataCollector implements LateDataCollectorInterface
 {
@@ -31,7 +29,10 @@ class CacheDataCollector extends DataCollector implements LateDataCollectorInter
      */
     private $instances = [];
 
-    public function addInstance(string $name, TraceableAdapter $instance)
+    /**
+     * @param string $name
+     */
+    public function addInstance($name, TraceableAdapter $instance)
     {
         $this->instances[$name] = $instance;
     }
@@ -39,7 +40,7 @@ class CacheDataCollector extends DataCollector implements LateDataCollectorInter
     /**
      * {@inheritdoc}
      */
-    public function collect(Request $request, Response $response, \Throwable $exception = null)
+    public function collect(Request $request, Response $response, \Exception $exception = null)
     {
         $empty = ['calls' => [], 'config' => [], 'options' => [], 'statistics' => []];
         $this->data = ['instances' => $empty, 'total' => $empty];
@@ -61,7 +62,7 @@ class CacheDataCollector extends DataCollector implements LateDataCollectorInter
 
     public function lateCollect()
     {
-        $this->data['instances']['calls'] = $this->cloneVar($this->data['instances']['calls']);
+        $this->data = $this->cloneVar($this->data);
     }
 
     /**

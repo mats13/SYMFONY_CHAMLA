@@ -190,7 +190,7 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
     /**
      * {@inheritdoc}
      */
-    public function handle(Request $request, int $type = HttpKernelInterface::MASTER_REQUEST, bool $catch = true)
+    public function handle(Request $request, $type = HttpKernelInterface::MASTER_REQUEST, $catch = true)
     {
         // FIXME: catch exceptions and implement a 500 error page here? -> in Varnish, there is a built-in error page mechanism
         if (HttpKernelInterface::MASTER_REQUEST === $type) {
@@ -207,7 +207,7 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
 
         $this->traces[$this->getTraceKey($request)] = [];
 
-        if (!$request->isMethodSafe()) {
+        if (!$request->isMethodSafe(false)) {
             $response = $this->invalidate($request, $catch);
         } elseif ($request->headers->has('expect') || !$request->isMethodCacheable()) {
             $response = $this->pass($request, $catch);
@@ -256,11 +256,12 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
     /**
      * Forwards the Request to the backend without storing the Response in the cache.
      *
-     * @param bool $catch Whether to process exceptions
+     * @param Request $request A Request instance
+     * @param bool    $catch   Whether to process exceptions
      *
      * @return Response A Response instance
      */
-    protected function pass(Request $request, bool $catch = false)
+    protected function pass(Request $request, $catch = false)
     {
         $this->record($request, 'pass');
 
@@ -270,7 +271,8 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
     /**
      * Invalidates non-safe methods (like POST, PUT, and DELETE).
      *
-     * @param bool $catch Whether to process exceptions
+     * @param Request $request A Request instance
+     * @param bool    $catch   Whether to process exceptions
      *
      * @return Response A Response instance
      *
@@ -278,7 +280,7 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
      *
      * @see RFC2616 13.10
      */
-    protected function invalidate(Request $request, bool $catch = false)
+    protected function invalidate(Request $request, $catch = false)
     {
         $response = $this->pass($request, $catch);
 
@@ -318,13 +320,14 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
      * the backend using conditional GET. When no matching cache entry is found,
      * it triggers "miss" processing.
      *
-     * @param bool $catch Whether to process exceptions
+     * @param Request $request A Request instance
+     * @param bool    $catch   Whether to process exceptions
      *
      * @return Response A Response instance
      *
      * @throws \Exception
      */
-    protected function lookup(Request $request, bool $catch = false)
+    protected function lookup(Request $request, $catch = false)
     {
         try {
             $entry = $this->store->lookup($request);
@@ -367,11 +370,13 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
      * The original request is used as a template for a conditional
      * GET request with the backend.
      *
-     * @param bool $catch Whether to process exceptions
+     * @param Request  $request A Request instance
+     * @param Response $entry   A Response instance to validate
+     * @param bool     $catch   Whether to process exceptions
      *
      * @return Response A Response instance
      */
-    protected function validate(Request $request, Response $entry, bool $catch = false)
+    protected function validate(Request $request, Response $entry, $catch = false)
     {
         $subRequest = clone $request;
 
@@ -430,11 +435,12 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
      * Unconditionally fetches a fresh response from the backend and
      * stores it in the cache if is cacheable.
      *
-     * @param bool $catch Whether to process exceptions
+     * @param Request $request A Request instance
+     * @param bool    $catch   Whether to process exceptions
      *
      * @return Response A Response instance
      */
-    protected function fetch(Request $request, bool $catch = false)
+    protected function fetch(Request $request, $catch = false)
     {
         $subRequest = clone $request;
 
@@ -467,7 +473,7 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
      *
      * @return Response A Response instance
      */
-    protected function forward(Request $request, bool $catch = false, Response $entry = null)
+    protected function forward(Request $request, $catch = false, Response $entry = null)
     {
         if ($this->surrogate) {
             $this->surrogate->addSurrogateCapability($request);
@@ -665,8 +671,10 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
     /**
      * Checks if the Request includes authorization or other sensitive information
      * that should cause the Response to be considered private by default.
+     *
+     * @return bool true if the Request is private, false otherwise
      */
-    private function isPrivateRequest(Request $request): bool
+    private function isPrivateRequest(Request $request)
     {
         foreach ($this->options['private_headers'] as $key) {
             $key = strtolower(str_replace('HTTP_', '', $key));

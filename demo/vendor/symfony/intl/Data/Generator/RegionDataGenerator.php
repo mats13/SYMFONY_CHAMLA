@@ -15,7 +15,6 @@ use Symfony\Component\Intl\Data\Bundle\Compiler\BundleCompilerInterface;
 use Symfony\Component\Intl\Data\Bundle\Reader\BundleEntryReaderInterface;
 use Symfony\Component\Intl\Data\Util\ArrayAccessibleResourceBundle;
 use Symfony\Component\Intl\Data\Util\LocaleScanner;
-use Symfony\Component\Intl\Exception\RuntimeException;
 
 /**
  * The rule for compiling the region bundle.
@@ -28,18 +27,6 @@ use Symfony\Component\Intl\Exception\RuntimeException;
  */
 class RegionDataGenerator extends AbstractDataGenerator
 {
-    /**
-     * Source: https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes.
-     */
-    private static $preferredAlpha2ToAlpha3Mapping = [
-        'CD' => 'COD',
-        'DE' => 'DEU',
-        'FR' => 'FRA',
-        'MM' => 'MMR',
-        'TL' => 'TLS',
-        'YE' => 'YEM',
-    ];
-
     private static $blacklist = [
         // Exceptional reservations
         'AC' => true, // Ascension Island
@@ -84,7 +71,7 @@ class RegionDataGenerator extends AbstractDataGenerator
     /**
      * {@inheritdoc}
      */
-    protected function scanLocales(LocaleScanner $scanner, string $sourceDir): array
+    protected function scanLocales(LocaleScanner $scanner, $sourceDir)
     {
         return $scanner->scanLocales($sourceDir.'/region');
     }
@@ -92,10 +79,9 @@ class RegionDataGenerator extends AbstractDataGenerator
     /**
      * {@inheritdoc}
      */
-    protected function compileTemporaryBundles(BundleCompilerInterface $compiler, string $sourceDir, string $tempDir)
+    protected function compileTemporaryBundles(BundleCompilerInterface $compiler, $sourceDir, $tempDir)
     {
         $compiler->compile($sourceDir.'/region', $tempDir);
-        $compiler->compile($sourceDir.'/misc/metadata.txt', $tempDir);
     }
 
     /**
@@ -109,7 +95,7 @@ class RegionDataGenerator extends AbstractDataGenerator
     /**
      * {@inheritdoc}
      */
-    protected function generateDataForLocale(BundleEntryReaderInterface $reader, string $tempDir, string $displayLocale): ?array
+    protected function generateDataForLocale(BundleEntryReaderInterface $reader, $tempDir, $displayLocale)
     {
         $localeBundle = $reader->read($tempDir, $displayLocale);
 
@@ -131,36 +117,31 @@ class RegionDataGenerator extends AbstractDataGenerator
     /**
      * {@inheritdoc}
      */
-    protected function generateDataForRoot(BundleEntryReaderInterface $reader, string $tempDir): ?array
+    protected function generateDataForRoot(BundleEntryReaderInterface $reader, $tempDir)
     {
-        return null;
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function generateDataForMeta(BundleEntryReaderInterface $reader, string $tempDir): ?array
+    protected function generateDataForMeta(BundleEntryReaderInterface $reader, $tempDir)
     {
         $rootBundle = $reader->read($tempDir, 'root');
-        $metadataBundle = $reader->read($tempDir, 'metadata');
 
         $this->regionCodes = array_unique($this->regionCodes);
 
         sort($this->regionCodes);
 
-        $alpha2ToAlpha3 = $this->generateAlpha2ToAlpha3Mapping(array_flip($this->regionCodes), $metadataBundle);
-        $alpha3ToAlpha2 = array_flip($alpha2ToAlpha3);
-        asort($alpha3ToAlpha2);
-
         return [
             'Version' => $rootBundle['Version'],
             'Regions' => $this->regionCodes,
-            'Alpha2ToAlpha3' => $alpha2ToAlpha3,
-            'Alpha3ToAlpha2' => $alpha3ToAlpha2,
         ];
     }
 
-    protected function generateRegionNames(ArrayAccessibleResourceBundle $localeBundle): array
+    /**
+     * @return array
+     */
+    protected function generateRegionNames(ArrayAccessibleResourceBundle $localeBundle)
     {
         $unfilteredRegionNames = iterator_to_array($localeBundle['Countries']);
         $regionNames = [];
@@ -174,40 +155,5 @@ class RegionDataGenerator extends AbstractDataGenerator
         }
 
         return $regionNames;
-    }
-
-    private function generateAlpha2ToAlpha3Mapping(array $countries, ArrayAccessibleResourceBundle $metadataBundle): array
-    {
-        $aliases = iterator_to_array($metadataBundle['alias']['territory']);
-        $alpha2ToAlpha3 = [];
-
-        foreach ($aliases as $alias => $data) {
-            $country = $data['replacement'];
-            if (2 === \strlen($country) && 3 === \strlen($alias) && 'overlong' === $data['reason']) {
-                if (isset(self::$preferredAlpha2ToAlpha3Mapping[$country])) {
-                    // Validate to prevent typos
-                    if (!isset($aliases[self::$preferredAlpha2ToAlpha3Mapping[$country]])) {
-                        throw new RuntimeException('The statically set three-letter mapping '.self::$preferredAlpha2ToAlpha3Mapping[$country].' for the country code '.$country.' seems to be invalid. Typo?');
-                    }
-
-                    $alpha3 = self::$preferredAlpha2ToAlpha3Mapping[$country];
-                    $alpha2 = $aliases[$alpha3]['replacement'];
-
-                    if ($country !== $alpha2) {
-                        throw new RuntimeException('The statically set three-letter mapping '.$alpha3.' for the country code '.$country.' seems to be an alias for '.$alpha2.'. Wrong mapping?');
-                    }
-
-                    $alpha2ToAlpha3[$country] = $alpha3;
-                } elseif (isset($alpha2ToAlpha3[$country])) {
-                    throw new RuntimeException('Multiple three-letter mappings exist for the country code '.$country.'. Please add one of them to the property $preferredAlpha2ToAlpha3Mapping.');
-                } elseif (isset($countries[$country]) && self::isValidCountryCode($alias)) {
-                    $alpha2ToAlpha3[$country] = $alias;
-                }
-            }
-        }
-
-        asort($alpha2ToAlpha3);
-
-        return $alpha2ToAlpha3;
     }
 }

@@ -51,9 +51,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
             if (!$adapter instanceof CacheItemPoolInterface) {
                 throw new InvalidArgumentException(sprintf('The class "%s" does not implement the "%s" interface.', \get_class($adapter), CacheItemPoolInterface::class));
             }
-            if (\in_array(\PHP_SAPI, ['cli', 'phpdbg'], true) && $adapter instanceof ApcuAdapter && !filter_var(ini_get('apc.enable_cli'), FILTER_VALIDATE_BOOLEAN)) {
-                continue; // skip putting APCu in the chain when the backend is disabled
-            }
 
             if ($adapter instanceof AdapterInterface) {
                 $this->adapters[] = $adapter;
@@ -149,7 +146,7 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
         return $this->generateItems($this->adapters[0]->getItems($keys), 0);
     }
 
-    private function generateItems(iterable $items, int $adapterIndex)
+    private function generateItems($items, $adapterIndex)
     {
         $missing = [];
         $misses = [];
@@ -182,8 +179,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function hasItem($key)
     {
@@ -198,20 +193,14 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
-    public function clear(string $prefix = '')
+    public function clear()
     {
         $cleared = true;
         $i = $this->adapterCount;
 
         while ($i--) {
-            if ($this->adapters[$i] instanceof AdapterInterface) {
-                $cleared = $this->adapters[$i]->clear($prefix) && $cleared;
-            } else {
-                $cleared = $this->adapters[$i]->clear() && $cleared;
-            }
+            $cleared = $this->adapters[$i]->clear() && $cleared;
         }
 
         return $cleared;
@@ -219,8 +208,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function deleteItem($key)
     {
@@ -236,8 +223,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function deleteItems(array $keys)
     {
@@ -253,8 +238,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function save(CacheItemInterface $item)
     {
@@ -270,8 +253,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function saveDeferred(CacheItemInterface $item)
     {
@@ -287,8 +268,6 @@ class ChainAdapter implements AdapterInterface, CacheInterface, PruneableInterfa
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function commit()
     {

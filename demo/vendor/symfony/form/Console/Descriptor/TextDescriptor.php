@@ -155,7 +155,7 @@ class TextDescriptor extends Descriptor
         return $tableRows;
     }
 
-    private function normalizeAndSortOptionsColumns(array $options): array
+    private function normalizeAndSortOptionsColumns(array $options)
     {
         foreach ($options as $group => $opts) {
             $sorted = false;
