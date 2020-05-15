@@ -13,6 +13,7 @@ Youtube : [SYMFONY 1/4 : 1H POUR COMPRENDRE LE FRAMEWORK !](https://www.youtube.
 
 - Wampserver avec au moins php 7.2.3 (On ne se servira pas d'apache ou Mysql)
 - Composer pour Windows
+- VSCode avec "twig pack" et "emmet"
 
 ## Création du projet de base
 
