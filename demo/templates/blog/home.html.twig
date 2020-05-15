@@ -1,9 +1,25 @@
-<h1>{{ title }}</h1>
+{% extends "base.html.twig" %}
 
-{% if age > 18 %}
-    <p>Tu es majeur</p>
-{% else %}
-    <p>Tu es mineur</p>
-{% endif %}
+{% block body %}
 
-<p>paragraphe</p>
+<!-- Je dis que j'hérite d'un certain template ...-->
+
+<!-- ... et donc, je dois remplir un block de ce template, je projette ce qui est dessous dans le block body du template-->
+
+    <h1>Bienvenue dans ce blog !!!</h1>
+
+    <h2>{{ title }}</h2>
+
+
+
+    {% if age > 18 %}
+        <p>Tu es majeur</p>
+    {% else %}
+        <p>Tu es mineur</p>
+    {% endif %}
+
+    <p>paragraphe</p>
+
+    <p> ipsum dolor sit amet consectetur adipisicing elit. Nostrum ut porro vero, quis commodi alias dolores rerum odio perferendis similique reprehenderit eligendi totam aspernatur laudantium libero hic, consectetur, officia explicabo?</p>
+   
+{% endblock body %}
