@@ -8,6 +8,7 @@ Youtube : [SYMFONY 1/4 : 1H POUR COMPRENDRE LE FRAMEWORK !](https://www.youtube.
 ## Installation
 - Wampserver avec au moins php 7.2.3 (On ne se servira pas d'apache ou Mysql)
 - Composer pour Windows
+- VSCode avec "twig pack" et "emmet"
 
 ## Création du projet de base
 - Création d'un projet symfony n'importe où (serveur interne) à l'aide de composer, un squelette de projet offert par symphony et le nom de notre projet.
